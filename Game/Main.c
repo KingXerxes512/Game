@@ -8,6 +8,10 @@
 
 // MAKING A VIDEO GAME FROM SCRATCH IN C - VIDEO SERIES
 
+HANDLE gGameWindow;
+
+BOOL gGameIsRunning;
+
 int WinMain(HINSTANCE Instance, HINSTANCE PreviousInstance, PSTR CommandLine, INT CmdShow) {
 
 	UNREFERENCED_PARAMETER(Instance);
@@ -27,10 +31,18 @@ int WinMain(HINSTANCE Instance, HINSTANCE PreviousInstance, PSTR CommandLine, IN
 	// Messages
 	MSG Message = { 0 };
 
-	while (GetMessageA(&Message, NULL, 0, 0) > 0) {
-		TranslateMessage(&Message);
+	gGameIsRunning = TRUE;
 
-		DispatchMessageA(&Message);
+	while (gGameIsRunning == TRUE) { // Game Loop
+		while (PeekMessageA(&Message, gGameWindow, 0, 0, PM_REMOVE)) { // Message Queue Loop
+			DispatchMessageA(&Message);
+		}
+
+		ProcessPlayerInput();
+		RenderFrameGraphics();
+
+		Sleep(1); // Will be revisited for tuning fps
+
 	}
 
 Exit:
@@ -44,15 +56,16 @@ LRESULT CALLBACK MainWindowProc(_In_ HWND WindowHandle, _In_  UINT Message, _In_
 
 	switch (Message)
 	{
-	case WM_CLOSE:
-	{
-		PostQuitMessage(0); // Passes a message with 0 which ends the program
-		break;
-	}
-	default:
-	{
-		return DefWindowProc(WindowHandle, Message, WParam, LParam);
-	}
+		case WM_CLOSE:
+		{
+			gGameIsRunning = FALSE;
+			PostQuitMessage(0); // Passes a message with 0 which ends the program
+			break;
+		}
+		default:
+		{
+			return DefWindowProc(WindowHandle, Message, WParam, LParam);
+		}
 	}
 	return Result;
 }
@@ -83,11 +96,10 @@ DWORD CreateMainGameWindow(void) {
 	}
 
 	// Window Handle
-	HWND WindowHandle = 0;
 
-	WindowHandle = CreateWindowEx(WS_EX_CLIENTEDGE, GAME_NAME "_WINDOWCLASS", "Window Title", WS_OVERLAPPEDWINDOW | WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, 600, 800, NULL, NULL, WindowClass.hInstance, NULL);
+	gGameWindow = CreateWindowEx(WS_EX_CLIENTEDGE, GAME_NAME "_WINDOWCLASS", "Window Title", WS_OVERLAPPEDWINDOW | WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, 600, 800, NULL, NULL, WindowClass.hInstance, NULL);
 
-	if (WindowHandle == NULL) {
+	if (gGameWindow == NULL) {
 		Result = GetLastError();
 		MessageBoxA(NULL, "Window Creation Failed!", "Error!", MB_ICONEXCLAMATION | MB_OK);
 		goto Exit;
@@ -106,4 +118,16 @@ BOOL GameIsAlreadyRunning(void) {
 	else {
 		return FALSE;
 	}
+}
+
+void ProcessPlayerInput(void) {
+	SHORT EscapeKeyIsDown = GetAsyncKeyState(VK_ESCAPE);
+
+	if (EscapeKeyIsDown) {
+		SendMessageA(gGameWindow, WM_CLOSE, 0, 0);
+	}
+}
+
+void RenderFrameGraphics(void) {
+
 }
