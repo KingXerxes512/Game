@@ -8,9 +8,11 @@
 
 // MAKING A VIDEO GAME FROM SCRATCH IN C - VIDEO SERIES
 
-HANDLE gGameWindow;
+HWND gGameWindow;
 
 BOOL gGameIsRunning;
+
+GAMEBITMAP gDrawingSurface = { 0 };
 
 int WinMain(HINSTANCE Instance, HINSTANCE PreviousInstance, PSTR CommandLine, INT CmdShow) {
 
@@ -28,6 +30,18 @@ int WinMain(HINSTANCE Instance, HINSTANCE PreviousInstance, PSTR CommandLine, IN
 		goto Exit;
 	}
 
+	gDrawingSurface.BitmapInfo.bmiHeader.biSize = sizeof(gDrawingSurface.BitmapInfo.bmiHeader);
+	gDrawingSurface.BitmapInfo.bmiHeader.biWidth = GAME_RES_WIDTH;
+	gDrawingSurface.BitmapInfo.bmiHeader.biHeight = GAME_RES_HEIGHT;
+	gDrawingSurface.BitmapInfo.bmiHeader.biBitCount = GAME_BPP;
+	gDrawingSurface.BitmapInfo.bmiHeader.biCompression = BI_RGB;
+	gDrawingSurface.BitmapInfo.bmiHeader.biPlanes = 1;
+	if ((gDrawingSurface.Memory = VirtualAlloc(NULL, GAME_DRAWING_AREA_MEMORY_SIZE, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE)) == NULL) {
+		MessageBoxA(NULL, "Failed to allocate memory for drawing surface!", "Error!", MB_ICONEXCLAMATION | MB_OK);
+		goto Exit;
+	}
+
+
 	// Messages
 	MSG Message = { 0 };
 
@@ -39,6 +53,7 @@ int WinMain(HINSTANCE Instance, HINSTANCE PreviousInstance, PSTR CommandLine, IN
 		}
 
 		ProcessPlayerInput();
+		
 		RenderFrameGraphics();
 
 		Sleep(1); // Will be revisited for tuning fps
@@ -97,7 +112,7 @@ DWORD CreateMainGameWindow(void) {
 
 	// Window Handle
 
-	gGameWindow = CreateWindowEx(WS_EX_CLIENTEDGE, GAME_NAME "_WINDOWCLASS", "Window Title", WS_OVERLAPPEDWINDOW | WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, 600, 800, NULL, NULL, WindowClass.hInstance, NULL);
+	gGameWindow = CreateWindowEx(WS_EX_CLIENTEDGE, GAME_NAME "_WINDOWCLASS", "Window Title", WS_OVERLAPPEDWINDOW | WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, 640, 480, NULL, NULL, WindowClass.hInstance, NULL);
 
 	if (gGameWindow == NULL) {
 		Result = GetLastError();
