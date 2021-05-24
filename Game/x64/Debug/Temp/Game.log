@@ -1,2 +1,6 @@
 ﻿  Main.c
+C:\Users\lcrod\Documents\C C++\Game\Game\Main.c(105,12): warning C4189: 'AverageMicrosecondsPerFrameCooked': local variable is initialized but not referenced
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\ucrt\stdio.h(2054,37): warning C4710: 'int _snprintf_s(char *const ,const size_t,const size_t,const char *const ,...)': function not inlined
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\ucrt\stdio.h(2054): message : see declaration of '_snprintf_s'
   Game.vcxproj -> C:\Users\lcrod\Documents\C C++\Game\Game\x64\Debug\Game.exe
+C:\Users\lcrod\Documents\C C++\Game\Game\Main.c(115): warning C26451: Arithmetic overflow: Using operator '*' on a 4 byte value and then casting the result to a 8 byte value. Cast the value to the wider type before calling operator '*' to avoid overflow (io.2).
