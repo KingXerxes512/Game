@@ -1,7 +1,10 @@
-#include <stdio.h>
 
 #pragma warning(push, 3)
+
+#include <stdio.h>
+
 #include <Windows.h>	// Don't want the warnings from Windows.h
+
 #pragma warning(pop) 
 
 #include <stdint.h> // type definitions
@@ -22,13 +25,28 @@ int __stdcall WinMain(_In_ HINSTANCE Instance, _In_opt_ HINSTANCE PreviousInstan
 	UNREFERENCED_PARAMETER(PreviousInstance);
 	UNREFERENCED_PARAMETER(CommandLine);
 	UNREFERENCED_PARAMETER(CmdShow);
-
+	
+	MSG Message = { 0 };
 	int64_t FrameStart = 0;
 	int64_t FrameEnd = 0;
 	int64_t ElapsedMicrosecondsPerFrameAccumulatorRaw = 0;
 	int64_t ElapsedMicrosecondsPerFrame = 0;
 	int64_t ElapsedMicrosecondsPerFrameAccumulatorCooked = 0;
-	MSG Message = { 0 };
+	HMODULE NtDllModuleHandle;
+
+	if ((NtDllModuleHandle = GetModuleHandleA("ntdll.dll")) == NULL) {
+		MessageBoxA(NULL, "Couldn't load ntdll.dll!", "Error!", MB_ICONEXCLAMATION | MB_OK);
+		goto Exit;
+	}
+
+	if ((NtQueryTimerResolution = (_NtQueryTimerResolution)GetProcAddress(NtDllModuleHandle, "NtQueryTimerResolution")) == NULL) {
+		MessageBoxA(NULL, "Couldn't find NtQueryTimerResolution function in ntdll.dll!!", "Error!", MB_ICONEXCLAMATION | MB_OK);
+		goto Exit;
+	}
+
+	NtQueryTimerResolution(&gPerformanceData.MinimumTimerResolution, &gPerformanceData.MaximumTimerResolution, &gPerformanceData.CurrentTimerResolution);
+
+
 
 	if (GameIsAlreadyRunning() == TRUE) { // No extra instances of this program!!!
 		MessageBoxA(NULL, "Another instance of this program is already running!", "Error!", MB_ICONEXCLAMATION | MB_OK);
@@ -40,6 +58,8 @@ int __stdcall WinMain(_In_ HINSTANCE Instance, _In_opt_ HINSTANCE PreviousInstan
 	}
 
 	QueryPerformanceFrequency((LARGE_INTEGER*)&gPerformanceData.PerfFrequency);
+
+	gPerformanceData.DisplayDebugInfo = TRUE;
 
 	gBackBuffer.BitmapInfo.bmiHeader.biSize = sizeof(gBackBuffer.BitmapInfo.bmiHeader);
 	gBackBuffer.BitmapInfo.bmiHeader.biWidth = GAME_RES_WIDTH;
@@ -54,6 +74,8 @@ int __stdcall WinMain(_In_ HINSTANCE Instance, _In_opt_ HINSTANCE PreviousInstan
 	}
 
 	memset(gBackBuffer.Memory, 0x7f, GAME_DRAWING_AREA_MEMORY_SIZE);
+
+	
 
 	// Messages
 	gGameIsRunning = TRUE;
@@ -70,7 +92,7 @@ int __stdcall WinMain(_In_ HINSTANCE Instance, _In_opt_ HINSTANCE PreviousInstan
 
 		RenderFrameGraphics();
 
-		// Timing
+		
 		QueryPerformanceCounter((LARGE_INTEGER*)&FrameEnd);
 
 		ElapsedMicrosecondsPerFrame = FrameEnd - FrameStart;
@@ -79,9 +101,11 @@ int __stdcall WinMain(_In_ HINSTANCE Instance, _In_opt_ HINSTANCE PreviousInstan
 
 		ElapsedMicrosecondsPerFrame /= gPerformanceData.PerfFrequency;
 
-		while (ElapsedMicrosecondsPerFrame <= TARGET_MICROSECONDS_PER_FRAME) {
-			
-			Sleep(0);
+		gPerformanceData.TotalFramesRendered++;
+
+		ElapsedMicrosecondsPerFrameAccumulatorRaw += ElapsedMicrosecondsPerFrame;
+
+		while (ElapsedMicrosecondsPerFrame <= TARGET_MICROSECONDS_PER_FRAME) { // Need to figure out what is wrong 
 
 			ElapsedMicrosecondsPerFrame = FrameEnd - FrameStart;
 
@@ -90,36 +114,23 @@ int __stdcall WinMain(_In_ HINSTANCE Instance, _In_opt_ HINSTANCE PreviousInstan
 			ElapsedMicrosecondsPerFrame /= gPerformanceData.PerfFrequency;
 
 			QueryPerformanceCounter((LARGE_INTEGER*)&FrameEnd);
+
+			if (ElapsedMicrosecondsPerFrame <= ((int64_t)TARGET_MICROSECONDS_PER_FRAME - gPerformanceData.CurrentTimerResolution)) {
+				Sleep(1);
+			}
 		}
 
 		ElapsedMicrosecondsPerFrameAccumulatorCooked += ElapsedMicrosecondsPerFrame;
 
-		gPerformanceData.TotalFramesRendered++;
-
-		ElapsedMicrosecondsPerFrameAccumulatorRaw += ElapsedMicrosecondsPerFrame;
-
 		if (gPerformanceData.TotalFramesRendered % CALCULATE_AVG_FPS_EVERY_X_FRAMES == 0) {
 
-			int64_t AverageMicrosecondsPerFrame = ElapsedMicrosecondsPerFrameAccumulatorRaw / CALCULATE_AVG_FPS_EVERY_X_FRAMES;
+			gPerformanceData.RawFPSAverage = 1.0f / ((ElapsedMicrosecondsPerFrameAccumulatorRaw / CALCULATE_AVG_FPS_EVERY_X_FRAMES) * 0.000001f);
 
-			int64_t AverageMicrosecondsPerFrameCooked = ElapsedMicrosecondsPerFrameAccumulatorCooked / CALCULATE_AVG_FPS_EVERY_X_FRAMES;
-
-			gPerformanceData.RawFPSAverage = 1.0f / ((ElapsedMicrosecondsPerFrameAccumulatorRaw / 60) * 0.000001f);
-
-			gPerformanceData.CookedFPSAverage = 1.0f / ((ElapsedMicrosecondsPerFrameAccumulatorCooked / 60) * 0.000001f);
-
-			char str[256] = { 0 };
-
-			_snprintf_s(str, _countof(str), _TRUNCATE,
-				"Average milliseconds/frame: %.02f\tAvg FPS Cooked: %.01f\tAvg FPS Raw: %.01f\n",
-				AverageMicrosecondsPerFrame * 0.001f,
-				gPerformanceData.CookedFPSAverage,
-				gPerformanceData.RawFPSAverage);
-
-			OutputDebugStringA(str);
+			gPerformanceData.CookedFPSAverage = 1.0f / ((ElapsedMicrosecondsPerFrameAccumulatorCooked / CALCULATE_AVG_FPS_EVERY_X_FRAMES) * 0.000001f);
 
 			ElapsedMicrosecondsPerFrameAccumulatorRaw = 0;
 
+			ElapsedMicrosecondsPerFrameAccumulatorCooked = 0;
 		}
 	}
 
@@ -229,9 +240,19 @@ BOOL GameIsAlreadyRunning(void) {
 void ProcessPlayerInput(void) {
 	int16_t EscapeKeyIsDown = GetAsyncKeyState(VK_ESCAPE);
 
+	int16_t DebugKeyIsDown = GetAsyncKeyState(VK_F1);
+
+	static int16_t DebugKeyWasDown = 0;
+
 	if (EscapeKeyIsDown) {
 		SendMessageA(gGameWindow, WM_CLOSE, 0, 0);
 	}
+
+	if (DebugKeyIsDown && !DebugKeyWasDown) {
+		gPerformanceData.DisplayDebugInfo = !gPerformanceData.DisplayDebugInfo;
+	}
+
+	DebugKeyWasDown = DebugKeyIsDown;
 }
 
 void RenderFrameGraphics(void) {
@@ -249,6 +270,32 @@ void RenderFrameGraphics(void) {
 		memcpy_s((PIXEL32*)gBackBuffer.Memory + x, sizeof(PIXEL32), &Pixel, sizeof(PIXEL32));
 	}
 
+	static int32_t ScreenX = 25;
+
+	static int32_t ScreenY = 25;
+
+	int32_t StartingScreenPixel = ((GAME_RES_WIDTH * GAME_RES_HEIGHT) - GAME_RES_WIDTH) - \
+		(GAME_RES_WIDTH * ScreenY) + ScreenX;
+
+	for (int32_t y = 0; y < 16; y++) {
+
+		for (int32_t x = 0; x < 16; x++) {
+
+			memset((PIXEL32*)gBackBuffer.Memory + (uintptr_t)StartingScreenPixel + x - ((uintptr_t)GAME_RES_WIDTH * y), 0xff, sizeof(PIXEL32));
+
+		}
+	}
+
+	// Screensaver junk lul
+	/*ScreenX++; ScreenY++;
+
+	if (ScreenX + 16 > GAME_RES_WIDTH) {
+		ScreenX = 0;
+	}
+	if (ScreenY + 16 > GAME_RES_HEIGHT) {
+		ScreenY = 0;
+	}*/
+
 	HDC DeviceContext = GetDC(gGameWindow);
 
 	StretchDIBits(DeviceContext,
@@ -264,6 +311,33 @@ void RenderFrameGraphics(void) {
 		&gBackBuffer.BitmapInfo,
 		DIB_RGB_COLORS,
 		SRCCOPY);
+
+	if (gPerformanceData.DisplayDebugInfo == TRUE) {
+
+		SelectObject(DeviceContext, (HFONT)GetStockObject(ANSI_FIXED_FONT));
+
+		char DebugTextBuffer[64] = { 0 };
+
+		sprintf_s(DebugTextBuffer, _countof(DebugTextBuffer), "FPS Raw:    %.01f", gPerformanceData.RawFPSAverage);
+
+		TextOutA(DeviceContext, 0, 0, DebugTextBuffer, (int)strlen(DebugTextBuffer));
+
+		sprintf_s(DebugTextBuffer, _countof(DebugTextBuffer), "FPS Cooked: %.01f", gPerformanceData.CookedFPSAverage);
+
+		TextOutA(DeviceContext, 0, 13, DebugTextBuffer, (int)strlen(DebugTextBuffer));
+
+		sprintf_s(DebugTextBuffer, _countof(DebugTextBuffer), "Min Timer Res: %.02f", gPerformanceData.MinimumTimerResolution / 10000.0f);
+
+		TextOutA(DeviceContext, 0, 26, DebugTextBuffer, (int)strlen(DebugTextBuffer));
+
+		sprintf_s(DebugTextBuffer, _countof(DebugTextBuffer), "Max Timer Res: %.02f", gPerformanceData.MaximumTimerResolution / 10000.0f);
+
+		TextOutA(DeviceContext, 0, 39, DebugTextBuffer, (int)strlen(DebugTextBuffer));
+
+		sprintf_s(DebugTextBuffer, _countof(DebugTextBuffer), "Cur Timer Res: %.02f", gPerformanceData.CurrentTimerResolution / 10000.0f);
+
+		TextOutA(DeviceContext, 0, 52, DebugTextBuffer, (int)strlen(DebugTextBuffer));
+	}
 
 	ReleaseDC(gGameWindow, DeviceContext);
 }

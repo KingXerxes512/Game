@@ -20,6 +20,10 @@
 
 #pragma warning(disable: 4710) // function not inlined
 
+typedef LONG(NTAPI* _NtQueryTimerResolution) (OUT PULONG MinimumResolution, OUT PULONG MaximumResolution, OUT PULONG CurrentResolution);
+
+_NtQueryTimerResolution NtQueryTimerResolution;
+
 typedef struct GAMEBITMAP {
 	
 	BITMAPINFO BitmapInfo;
@@ -55,6 +59,14 @@ typedef struct GAMEPERFDATA {
 	int32_t MonitorWidth;
 
 	int32_t MonitorHeight;
+
+	BOOL DisplayDebugInfo;
+
+	LONG MinimumTimerResolution;
+
+	LONG MaximumTimerResolution;
+
+	LONG CurrentTimerResolution;
 
 } GAMEPERFDATA;
 
