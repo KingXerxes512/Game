@@ -10,9 +10,11 @@
 
 #define GAME_DRAWING_AREA_MEMORY_SIZE (GAME_RES_WIDTH * GAME_RES_HEIGHT * GAME_BPP / 8)
 
-#define CALCULATE_AVG_FPS_EVERY_X_FRAMES	100
+#define CALCULATE_AVG_FPS_EVERY_X_FRAMES	120
 
-#define TARGET_MICROSECONDS_PER_FRAME 16667
+#define TARGET_MICROSECONDS_PER_FRAME		16667ULL // 6061
+
+#define SIMD
 
 #pragma warning(disable: 4820) // padding data structure warning
 
@@ -62,14 +64,43 @@ typedef struct GAMEPERFDATA {
 
 	BOOL DisplayDebugInfo;
 
-	LONG MinimumTimerResolution;
+	ULONG MinimumTimerResolution;
 
-	LONG MaximumTimerResolution;
+	ULONG MaximumTimerResolution;
 
-	LONG CurrentTimerResolution;
+	ULONG CurrentTimerResolution;
+
+	DWORD HandleCount;
+
+	PROCESS_MEMORY_COUNTERS_EX MemInfo;
+
+	SYSTEM_INFO SystemInfo;
+
+	int64_t CurrentSystemTime;
+
+	int64_t PreviousSystemTime;
+
+
+
+	double CPUPercent;
 
 } GAMEPERFDATA;
 
+typedef struct PLAYER {
+
+	char Name[12];
+
+	int32_t ScreenPosX;
+
+	int32_t ScreenPosY;
+
+	int32_t HP;
+
+	int32_t Strength;
+
+	int32_t MP;
+
+} PLAYER;
 
 LRESULT CALLBACK MainWindowProc(_In_ HWND WindowHandle, _In_  UINT Message, _In_  WPARAM WParam, _In_  LPARAM LParam);
 
@@ -81,3 +112,8 @@ void ProcessPlayerInput(void);
 
 void RenderFrameGraphics(void);
 
+#ifdef SIMD
+__forceinline void ClearScreen(_In_ __m128i* Color);
+#else
+__forceinline void ClearScreen(_In_ PIXEL32* Pixel);
+#endif

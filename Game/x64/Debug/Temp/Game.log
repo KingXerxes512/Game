@@ -1,5 +1,4 @@
 ﻿  Main.c
-C:\Users\lcrod\Documents\C C++\Game\Game\Main.c(47,65): warning C4057: 'function': 'PULONG' differs in indirection to slightly different base types from 'LONG *'
-C:\Users\lcrod\Documents\C C++\Game\Game\Main.c(47,107): warning C4057: 'function': 'PULONG' differs in indirection to slightly different base types from 'LONG *'
-C:\Users\lcrod\Documents\C C++\Game\Game\Main.c(47,149): warning C4057: 'function': 'PULONG' differs in indirection to slightly different base types from 'LONG *'
+C:\Users\lcrod\Documents\C C++\Game\Game\Main.c(183,47): warning C4244: '=': conversion from 'int64_t' to 'double', possible loss of data
+C:\Users\lcrod\Documents\C C++\Game\Game\Main.c(523,51): warning C4133: 'function': incompatible types - from 'PIXEL32 *' to '__m128i *'
   Game.vcxproj -> C:\Users\lcrod\Documents\C C++\Game\Game\x64\Debug\Game.exe
