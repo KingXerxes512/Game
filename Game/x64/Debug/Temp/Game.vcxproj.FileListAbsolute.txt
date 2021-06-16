@@ -1,2 +1,4 @@
 C:\Users\lcrod\Documents\C C++\Game\Game\x64\Debug\Game.exe.lastcodeanalysissucceeded
 C:\Users\lcrod\Documents\C C++\Game\Game\x64\Debug\Temp\NativeCodeAnalysis.read.1.tlog
+C:\Users\lcrod\Documents\C\Game\Game\x64\Debug\Game.exe.lastcodeanalysissucceeded
+C:\Users\lcrod\Documents\C\Game\Game\x64\Debug\Temp\NativeCodeAnalysis.read.1.tlog

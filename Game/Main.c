@@ -25,7 +25,7 @@ GAMEBITMAP gBackBuffer;
 
 GAMEPERFDATA gPerformanceData;
 
-PLAYER gPlayer;
+HERO gPlayer;
 
 BOOL gWindowHasFocus;
 
@@ -117,10 +117,11 @@ int __stdcall WinMain(_In_ HINSTANCE Instance, _In_opt_ HINSTANCE PreviousInstan
 
 	memset(gBackBuffer.Memory, 0x7f, GAME_DRAWING_AREA_MEMORY_SIZE);
 
-
-	gPlayer.ScreenPosX = 25;
-
-	gPlayer.ScreenPosY = 25;
+	if (InitializeHero() != ERROR_SUCCESS)
+	{
+		MessageBoxA(NULL, "Failed to initialize hero!", "Error!", MB_ICONEXCLAMATION | MB_OK);
+		goto Exit;
+	}
 
 	// Messages
 	gGameIsRunning = TRUE;
@@ -134,7 +135,7 @@ int __stdcall WinMain(_In_ HINSTANCE Instance, _In_opt_ HINSTANCE PreviousInstan
 			DispatchMessageA(&Message);
 		}
 
-		ProcessPlayerInput();
+		ProcessHeroInput();
 
 		RenderFrameGraphics();
 
@@ -334,7 +335,7 @@ BOOL GameIsAlreadyRunning(void)
 	}
 }
 
-void ProcessPlayerInput(void)
+void ProcessHeroInput(void)
 {
 	if (gWindowHasFocus == FALSE)
 	{
@@ -417,9 +418,185 @@ void ProcessPlayerInput(void)
 
 }
 
+DWORD Load32BppBitmapFromFile(_In_ char* FileName, _Inout_ GAMEBITMAP* GameBitMap)
+{
+	DWORD Error = ERROR_SUCCESS;
+	
+	HANDLE FileHandle = INVALID_HANDLE_VALUE;
+
+	WORD BitmapHeader = 0;
+
+	DWORD PixelDataOffset = 0x36;
+
+	DWORD NumberOfBytesRead;
+
+	if ((FileHandle = CreateFileA(FileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL)) == INVALID_HANDLE_VALUE)
+	{
+		Error = GetLastError();
+		goto Exit;
+	}
+
+	//if (ReadFile(FileHandle, &BitmapHeader, 2, &NumberOfBytesRead, NULL) == 0)
+	//{
+	//	Error = GetLastError();
+	//	goto Exit;
+	//}
+
+	//if (BitmapHeader != 0x4d42) // "BM" Backwards
+	//{
+	//	Error = ERROR_FILE_INVALID;
+
+	//	goto Exit;
+	//}
+
+	/*if (SetFilePointer(FileHandle, 0xA, NULL, FILE_BEGIN) == INVALID_SET_FILE_POINTER)
+	{
+		Error = GetLastError();
+
+		goto Exit;
+	}
+
+	if (ReadFile(FileHandle, &PixelDataOffset, sizeof(DWORD), &NumberOfBytesRead, NULL) == 0)
+	{
+		Error = GetLastError();
+
+		goto Exit;
+	}*/
+
+	if (SetFilePointer(FileHandle, 0xE, NULL, FILE_BEGIN) == INVALID_SET_FILE_POINTER)
+	{
+		Error = GetLastError();
+
+		goto Exit;
+	}
+
+	// Reads the BITMAPHEADERINFO FROM FILE
+	if (ReadFile(FileHandle, &GameBitMap->BitmapInfo.bmiHeader, sizeof(BITMAPINFOHEADER), &NumberOfBytesRead, NULL) == 0)
+	{
+		Error = GetLastError();
+
+		goto Exit;
+	}
+
+	// Allocate the memory for our bitmap
+	if ((GameBitMap->Memory = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, GameBitMap->BitmapInfo.bmiHeader.biSizeImage)) == NULL)
+	{
+		Error = ERROR_NOT_ENOUGH_MEMORY;
+
+		goto Exit;
+	}
+
+	if (SetFilePointer(FileHandle, PixelDataOffset, NULL, FILE_BEGIN) == INVALID_SET_FILE_POINTER)
+	{
+		Error = GetLastError();
+
+		goto Exit;
+	}
+
+	// Read in the bitmap data from file
+	if (ReadFile(FileHandle, GameBitMap->Memory, GameBitMap->BitmapInfo.bmiHeader.biSizeImage, &NumberOfBytesRead, NULL) == 0)
+	{
+		Error = GetLastError();
+
+		goto Exit;
+	}
+
+Exit:
+
+	if (FileHandle && FileHandle != INVALID_HANDLE_VALUE)
+	{
+		CloseHandle(FileHandle);
+	}
+
+	return Error;
+}
+
+DWORD InitializeHero(void)
+{
+	DWORD Error = ERROR_SUCCESS;
+
+	gPlayer.ScreenPosX = 25;
+
+	gPlayer.ScreenPosY = 25;
+
+	if ((Error = Load32BppBitmapFromFile(".\\Assets\\Hero_Suit0_Down_Standing.bmpx", &gPlayer.Sprite[SUIT_0][FACING_DOWN_0])) != ERROR_SUCCESS)
+	{
+		MessageBoxA(NULL, "Load32BppBitmapFromFile failed!", "Error!", MB_ICONEXCLAMATION | MB_OK);
+		goto Exit;
+	}
+
+	if ((Error = Load32BppBitmapFromFile(".\\Assets\\Hero_Suit0_Down_Walk1.bmpx", &gPlayer.Sprite[SUIT_0][FACING_DOWN_1])) != ERROR_SUCCESS)
+	{
+		MessageBoxA(NULL, "Load32BppBitmapFromFile failed!", "Error!", MB_ICONEXCLAMATION | MB_OK);
+		goto Exit;
+	}
+
+	if ((Error = Load32BppBitmapFromFile(".\\Assets\\Hero_Suit0_Down_Walk2.bmpx", &gPlayer.Sprite[SUIT_0][FACING_DOWN_2])) != ERROR_SUCCESS)
+	{
+		MessageBoxA(NULL, "Load32BppBitmapFromFile failed!", "Error!", MB_ICONEXCLAMATION | MB_OK);
+		goto Exit;
+	}
+
+	if ((Error = Load32BppBitmapFromFile(".\\Assets\\Hero_Suit0_Left_Standing.bmpx", &gPlayer.Sprite[SUIT_0][FACING_LEFT_0])) != ERROR_SUCCESS)
+	{
+		MessageBoxA(NULL, "Load32BppBitmapFromFile failed!", "Error!", MB_ICONEXCLAMATION | MB_OK);
+		goto Exit;
+	}
+
+	if ((Error = Load32BppBitmapFromFile(".\\Assets\\Hero_Suit0_Left_Walk1.bmpx", &gPlayer.Sprite[SUIT_0][FACING_LEFT_1])) != ERROR_SUCCESS)
+	{
+		MessageBoxA(NULL, "Load32BppBitmapFromFile failed!", "Error!", MB_ICONEXCLAMATION | MB_OK);
+		goto Exit;
+	}
+
+	if ((Error = Load32BppBitmapFromFile(".\\Assets\\Hero_Suit0_Left_Walk2.bmpx", &gPlayer.Sprite[SUIT_0][FACING_LEFT_2])) != ERROR_SUCCESS)
+	{
+		MessageBoxA(NULL, "Load32BppBitmapFromFile failed!", "Error!", MB_ICONEXCLAMATION | MB_OK);
+		goto Exit;
+	}
+
+	if ((Error = Load32BppBitmapFromFile(".\\Assets\\Hero_Suit0_Right_Standing.bmpx", &gPlayer.Sprite[SUIT_0][FACING_RIGHT_0])) != ERROR_SUCCESS)
+	{
+		MessageBoxA(NULL, "Load32BppBitmapFromFile failed!", "Error!", MB_ICONEXCLAMATION | MB_OK);
+		goto Exit;
+	}
+
+	if ((Error = Load32BppBitmapFromFile(".\\Assets\\Hero_Suit0_Right_Walk1.bmpx", &gPlayer.Sprite[SUIT_0][FACING_RIGHT_1])) != ERROR_SUCCESS)
+	{
+		MessageBoxA(NULL, "Load32BppBitmapFromFile failed!", "Error!", MB_ICONEXCLAMATION | MB_OK);
+		goto Exit;
+	}
+
+	if ((Error = Load32BppBitmapFromFile(".\\Assets\\Hero_Suit0_Right_Walk2.bmpx", &gPlayer.Sprite[SUIT_0][FACING_RIGHT_2])) != ERROR_SUCCESS)
+	{
+		MessageBoxA(NULL, "Load32BppBitmapFromFile failed!", "Error!", MB_ICONEXCLAMATION | MB_OK);
+		goto Exit;
+	}
+
+	if ((Error = Load32BppBitmapFromFile(".\\Assets\\Hero_Suit0_Up_Standing.bmpx", &gPlayer.Sprite[SUIT_0][FACING_UPWARD_0])) != ERROR_SUCCESS)
+	{
+		MessageBoxA(NULL, "Load32BppBitmapFromFile failed!", "Error!", MB_ICONEXCLAMATION | MB_OK);
+		goto Exit;
+	}
+
+	if ((Error = Load32BppBitmapFromFile(".\\Assets\\Hero_Suit0_Up_Walk1.bmpx", &gPlayer.Sprite[SUIT_0][FACING_UPWARD_1])) != ERROR_SUCCESS)
+	{
+		MessageBoxA(NULL, "Load32BppBitmapFromFile failed!", "Error!", MB_ICONEXCLAMATION | MB_OK);
+		goto Exit;
+	}
+
+	if ((Error = Load32BppBitmapFromFile(".\\Assets\\Hero_Suit0_Up_Walk2.bmpx", &gPlayer.Sprite[SUIT_0][FACING_UPWARD_2])) != ERROR_SUCCESS)
+	{
+		MessageBoxA(NULL, "Load32BppBitmapFromFile failed!", "Error!", MB_ICONEXCLAMATION | MB_OK);
+		goto Exit;
+	}
+
+Exit:
+	return Error;
+}
+
 void RenderFrameGraphics(void)
 {
-	//memset(gBackBuffer.Memory, 0xFF, (GAME_RES_WIDTH * GAME_RES_HEIGHT) * 4);
 
 #ifdef SIMD
 	__m128i QuadPixel = { 0x7f, 0x00, 0x00, 0xff, 0x7f, 0x00, 0x00, 0xff, 0x7f, 0x00, 0x00, 0xff, 0x7f, 0x00, 0x00, 0xff };
@@ -432,30 +609,22 @@ void RenderFrameGraphics(void)
 
 #endif 
 
-	int32_t ScreenX = gPlayer.ScreenPosX;
+	//int32_t ScreenX = gPlayer.ScreenPosX;
 
-	int32_t ScreenY = gPlayer.ScreenPosY;
+	//int32_t ScreenY = gPlayer.ScreenPosY;
 
-	int32_t StartingScreenPixel = ((GAME_RES_WIDTH * GAME_RES_HEIGHT) - GAME_RES_WIDTH) - \
-		(GAME_RES_WIDTH * ScreenY) + ScreenX;
+	//int32_t StartingScreenPixel = ((GAME_RES_WIDTH * GAME_RES_HEIGHT) - GAME_RES_WIDTH) - \
+	//	(GAME_RES_WIDTH * ScreenY) + ScreenX;
 
-	for (int32_t y = 0; y < 16; y++) // Create White Square
-	{
-		for (int32_t x = 0; x < 16; x++)
-		{
-			memset((PIXEL32*)gBackBuffer.Memory + (uintptr_t)StartingScreenPixel + x - ((uintptr_t)GAME_RES_WIDTH * y), 0xff, sizeof(PIXEL32));
-		}
-	}
+	//for (int32_t y = 0; y < 16; y++) // Create White Square
+	//{
+	//	for (int32_t x = 0; x < 16; x++)
+	//	{
+	//		memset((PIXEL32*)gBackBuffer.Memory + (uintptr_t)StartingScreenPixel + x - ((uintptr_t)GAME_RES_WIDTH * y), 0xff, sizeof(PIXEL32));
+	//	}
+	//}
 
-	// Screensaver junk lul
-	/*ScreenX++; ScreenY++;
-
-	if (ScreenX + 16 > GAME_RES_WIDTH)
-		ScreenX = 0;
-	}
-	if (ScreenY + 16 > GAME_RES_HEIGHT)
-		ScreenY = 0;
-	}*/
+	Blit32BppBitmapToBuffer(&gPlayer.Sprite[SUIT_0][FACING_DOWN_0], gPlayer.ScreenPosX, gPlayer.ScreenPosY);
 
 	HDC DeviceContext = GetDC(gGameWindow);
 
@@ -529,8 +698,42 @@ __forceinline void ClearScreen(_In_ PIXEL32* Pixel)
 {
 	for (int x = 0; x < GAME_RES_WIDTH * GAME_RES_HEIGHT; x++)
 	{
-		// memcpy((PIXEL32*)gBackBuffer.Memory + x, Pixel, sizeof(PIXEL32)); This version is the unsecured version of memcpy but is WAY faster
+		// memcpy((PIXEL32*)gBackBuffer.Memory + x, Pixel, sizeof(PIXEL32)); // This version is the unsecured version of memcpy but is WAY faster
 		memcpy_s((PIXEL32*)gBackBuffer.Memory + x, sizeof(PIXEL32), Pixel, sizeof(PIXEL32));
 	}
 }
 #endif
+
+void Blit32BppBitmapToBuffer(_In_ GAMEBITMAP* GameBitMap, _In_ uint16_t x, _In_ uint16_t y)
+{
+	int32_t StartingScreenPixel = ((GAME_RES_WIDTH * GAME_RES_HEIGHT) - GAME_RES_WIDTH - (GAME_RES_WIDTH * y) + x);
+
+	int32_t StartingBitmapPixel = ((GameBitMap->BitmapInfo.bmiHeader.biWidth * GameBitMap->BitmapInfo.bmiHeader.biHeight) - \
+		GameBitMap->BitmapInfo.bmiHeader.biWidth);
+	
+	int32_t MemoryOffset = 0;
+
+	int32_t BitmapOffset = 0;
+
+	PIXEL32 BitmapPixel = { 0 };
+
+	// PIXEL32 BackgroundPixel = { 0 };
+
+	for (int16_t YPixel = 0; YPixel < GameBitMap->BitmapInfo.bmiHeader.biHeight; YPixel++)
+	{
+		for (int16_t XPixel = 0; XPixel < GameBitMap->BitmapInfo.bmiHeader.biWidth; XPixel++)
+		{
+			MemoryOffset = StartingScreenPixel + XPixel - (GAME_RES_WIDTH * YPixel);
+
+			BitmapOffset = StartingBitmapPixel + XPixel - (GameBitMap->BitmapInfo.bmiHeader.biWidth * YPixel);
+
+			memcpy_s(&BitmapPixel, sizeof(PIXEL32), (PIXEL32*)GameBitMap->Memory + BitmapOffset, sizeof(PIXEL32));
+
+			if (BitmapPixel.Alpha == 255)
+			{
+				memcpy_s((PIXEL32*)gBackBuffer.Memory + MemoryOffset, sizeof(PIXEL32), &BitmapPixel, sizeof(PIXEL32));
+			}
+		}
+	}
+
+}
