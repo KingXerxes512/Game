@@ -46,6 +46,15 @@
 
 #define FACING_UPWARD_2	11
 
+#define DIRECTION_DOWN	0
+
+#define DIRECTION_LEFT	3
+
+#define DIRECTION_RIGHT	6
+
+#define DIRECTION_UP	9
+
+
 #pragma warning(disable: 4820) // padding data structure warning
 
 #pragma warning(disable: 5045) // spectre/meltdown CPU vulnerability
@@ -125,6 +134,14 @@ typedef struct HERO {
 	int32_t ScreenPosX;
 
 	int32_t ScreenPosY;
+
+	uint8_t MovementRemaining;
+
+	uint8_t Direction;
+
+	uint8_t CurrentArmor;
+
+	uint8_t SpriteIndex;
 
 	int32_t HP;
 

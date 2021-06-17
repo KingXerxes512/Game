@@ -339,7 +339,7 @@ void ProcessHeroInput(void)
 {
 	if (gWindowHasFocus == FALSE)
 	{
-		return;
+		goto Exit;
 	}
 
 	int16_t EscapeKeyIsDown = GetAsyncKeyState(VK_ESCAPE);
@@ -374,48 +374,118 @@ void ProcessHeroInput(void)
 		gPerformanceData.DisplayDebugInfo = !gPerformanceData.DisplayDebugInfo;
 	}
 
-	if (LeftKeyIsDown)
+	if (!gPlayer.MovementRemaining)
 	{
-		if (gPlayer.ScreenPosX > 0)
+		if (DownKeyIsDown)
 		{
-			gPlayer.ScreenPosX--;
+			if (gPlayer.ScreenPosY < GAME_RES_HEIGHT - 16)
+			{
+				gPlayer.MovementRemaining = 16;
+
+				gPlayer.Direction = DIRECTION_DOWN;
+			}
+		}
+		else if (LeftKeyIsDown)
+		{
+			if (gPlayer.ScreenPosX > 0)
+			{
+				gPlayer.MovementRemaining = 16;
+
+				gPlayer.Direction = DIRECTION_LEFT;
+			}
+		}
+		else if (RightKeyIsDown)
+		{
+			if (gPlayer.ScreenPosX < GAME_RES_WIDTH - 16)
+			{
+				gPlayer.MovementRemaining = 16;
+
+				gPlayer.Direction = DIRECTION_RIGHT;
+			}
+		}
+		else if (UpKeyIsDown)
+		{
+			if (gPlayer.ScreenPosY > 0)
+			{
+				gPlayer.MovementRemaining = 16;
+
+				gPlayer.Direction = DIRECTION_UP;
+			}
 		}
 	}
-
-	if (RightKeyIsDown)
+	else
 	{
-		if (gPlayer.ScreenPosX < GAME_RES_WIDTH - 16)
-		{
-			gPlayer.ScreenPosX++;
-		}
-	}
+		gPlayer.MovementRemaining--;
 
-	if (UpKeyIsDown)
-	{
-		if (gPlayer.ScreenPosY > 0)
-		{
-			gPlayer.ScreenPosY--;
-		}
-	}
-
-	if (DownKeyIsDown)
-	{
-		if (gPlayer.ScreenPosY < GAME_RES_HEIGHT - 16)
+		if (gPlayer.Direction == DIRECTION_DOWN)
 		{
 			gPlayer.ScreenPosY++;
 		}
+		else if (gPlayer.Direction == DIRECTION_LEFT)
+		{
+			gPlayer.ScreenPosX--;
+		}
+		else if (gPlayer.Direction == DIRECTION_RIGHT)
+		{
+			gPlayer.ScreenPosX++;
+		}
+		else if (gPlayer.Direction == DIRECTION_UP)
+		{
+			gPlayer.ScreenPosY--;
+		}
+
+		switch (gPlayer.MovementRemaining)
+		{
+			case 16:
+			{
+				gPlayer.SpriteIndex = 0;
+
+				break;
+			}
+			case 12:
+			{
+				gPlayer.SpriteIndex = 1;
+
+				break;
+			}
+			case 8:
+			{
+				gPlayer.SpriteIndex = 0;
+
+				break;
+			}
+			case 4:
+			{
+				gPlayer.SpriteIndex = 2;
+
+				break;
+			}
+			case 0:
+			{
+				gPlayer.SpriteIndex = 0;
+
+				break;
+			}
+
+			default:
+			{
+				// assert
+			}
+		}
+
+		DebugKeyWasDown = DebugKeyIsDown;
+
+		LeftKeyWasDown = LeftKeyIsDown;
+
+		RightKeyWasDown = RightKeyIsDown;
+
+		UpKeyWasDown = UpKeyIsDown;
+
+		DownKeyWasDown = DownKeyIsDown;
+
+	Exit:
+		return;
 	}
-
-	DebugKeyWasDown = DebugKeyIsDown;
-
-	LeftKeyWasDown = LeftKeyIsDown;
-
-	RightKeyWasDown = RightKeyIsDown;
-
-	UpKeyWasDown = UpKeyIsDown;
-
-	DownKeyWasDown = DownKeyIsDown;
-
 }
 
 DWORD Load32BppBitmapFromFile(_In_ char* FileName, _Inout_ GAMEBITMAP* GameBitMap)
@@ -515,9 +585,15 @@ DWORD InitializeHero(void)
 {
 	DWORD Error = ERROR_SUCCESS;
 
-	gPlayer.ScreenPosX = 25;
+	gPlayer.ScreenPosX = 32;
 
-	gPlayer.ScreenPosY = 25;
+	gPlayer.ScreenPosY = 32;
+
+	gPlayer.CurrentArmor = SUIT_0;
+
+	gPlayer.Direction = DIRECTION_DOWN;
+
+	gPlayer.MovementRemaining = 0;
 
 	if ((Error = Load32BppBitmapFromFile(".\\Assets\\Hero_Suit0_Down_Standing.bmpx", &gPlayer.Sprite[SUIT_0][FACING_DOWN_0])) != ERROR_SUCCESS)
 	{
@@ -606,25 +682,12 @@ void RenderFrameGraphics(void)
 	PIXEL32 Pixel = { 0x7f, 0x00, 0x00, 0xff };
 
 	ClearScreen(&Pixel);
-
+	
 #endif 
 
-	//int32_t ScreenX = gPlayer.ScreenPosX;
-
-	//int32_t ScreenY = gPlayer.ScreenPosY;
-
-	//int32_t StartingScreenPixel = ((GAME_RES_WIDTH * GAME_RES_HEIGHT) - GAME_RES_WIDTH) - \
-	//	(GAME_RES_WIDTH * ScreenY) + ScreenX;
-
-	//for (int32_t y = 0; y < 16; y++) // Create White Square
-	//{
-	//	for (int32_t x = 0; x < 16; x++)
-	//	{
-	//		memset((PIXEL32*)gBackBuffer.Memory + (uintptr_t)StartingScreenPixel + x - ((uintptr_t)GAME_RES_WIDTH * y), 0xff, sizeof(PIXEL32));
-	//	}
-	//}
-
-	Blit32BppBitmapToBuffer(&gPlayer.Sprite[SUIT_0][FACING_DOWN_0], gPlayer.ScreenPosX, gPlayer.ScreenPosY);
+	Blit32BppBitmapToBuffer(&gPlayer.Sprite[gPlayer.CurrentArmor][gPlayer.Direction + gPlayer.SpriteIndex],
+		gPlayer.ScreenPosX,
+		gPlayer.ScreenPosY);
 
 	HDC DeviceContext = GetDC(gGameWindow);
 
@@ -679,6 +742,14 @@ void RenderFrameGraphics(void)
 		sprintf_s(DebugTextBuffer, _countof(DebugTextBuffer), "CPU Percentage: %.02f %%", gPerformanceData.CPUPercent);
 
 		TextOutA(DeviceContext, 0, 91, DebugTextBuffer, (int)strlen(DebugTextBuffer));
+
+		sprintf_s(DebugTextBuffer, _countof(DebugTextBuffer), "Total Frames: %llu", gPerformanceData.TotalFramesRendered);
+
+		TextOutA(DeviceContext, 0, 104, DebugTextBuffer, (int)strlen(DebugTextBuffer));
+
+		sprintf_s(DebugTextBuffer, _countof(DebugTextBuffer), "Screen Pos: (%d,%d)", gPlayer.ScreenPosX, gPlayer.ScreenPosY);
+
+		TextOutA(DeviceContext, 0, 117, DebugTextBuffer, (int)strlen(DebugTextBuffer));
 	}
 
 	ReleaseDC(gGameWindow, DeviceContext);

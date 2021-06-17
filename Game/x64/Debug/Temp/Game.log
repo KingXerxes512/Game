@@ -1,9 +1,9 @@
 ﻿  Main.c
 C:\Users\lcrod\Documents\C\Game\Game\Main.c(184,47): warning C4244: '=': conversion from 'int64_t' to 'double', possible loss of data
-C:\Users\lcrod\Documents\C\Game\Game\Main.c(427,7): warning C4189: 'BitmapHeader': local variable is initialized but not referenced
-C:\Users\lcrod\Documents\C\Game\Game\Main.c(627,84): warning C4242: 'function': conversion from 'int32_t' to 'uint16_t', possible loss of data
-C:\Users\lcrod\Documents\C\Game\Game\Main.c(627,104): warning C4242: 'function': conversion from 'int32_t' to 'uint16_t', possible loss of data
-C:\Users\lcrod\Documents\C\Game\Game\Main.c(692,51): warning C4133: 'function': incompatible types - from 'PIXEL32 *' to '__m128i *'
+C:\Users\lcrod\Documents\C\Game\Game\Main.c(497,7): warning C4189: 'BitmapHeader': local variable is initialized but not referenced
+C:\Users\lcrod\Documents\C\Game\Game\Main.c(689,21): warning C4242: 'function': conversion from 'int32_t' to 'uint16_t', possible loss of data
+C:\Users\lcrod\Documents\C\Game\Game\Main.c(690,21): warning C4242: 'function': conversion from 'int32_t' to 'uint16_t', possible loss of data
+C:\Users\lcrod\Documents\C\Game\Game\Main.c(763,51): warning C4133: 'function': incompatible types - from 'PIXEL32 *' to '__m128i *'
   Game.vcxproj -> C:\Users\lcrod\Documents\C\Game\Game\x64\Debug\Game.exe
   C:\Users\lcrod\Documents\C\Game\Game\Assets\Chara-Main.png
   C:\Users\lcrod\Documents\C\Game\Game\Assets\Hero_Suit0_Down_Standing.bmpx
