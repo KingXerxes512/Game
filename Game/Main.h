@@ -54,6 +54,20 @@
 
 #define DIRECTION_UP	9
 
+#define FONT_SHEET_CHARACTERS_PER_ROW 98
+
+
+#define LOG_LEVEL_NONE	0 
+
+#define LOG_LEVEL_INFO	1
+
+#define LOG_LEVEL_WARN	2
+
+#define LOG_LEVEL_ERROR 3
+
+#define LOG_LEVEL_DEBUG 4
+
+#define LOG_FILE_NAME GAME_NAME ".log"
 
 #pragma warning(disable: 4820) // padding data structure warning
 
@@ -131,9 +145,9 @@ typedef struct HERO {
 
 	GAMEBITMAP Sprite[3][12];
 
-	int32_t ScreenPosX;
+	int16_t ScreenPosX;
 
-	int32_t ScreenPosY;
+	int16_t ScreenPosY;
 
 	uint8_t MovementRemaining;
 
@@ -151,6 +165,12 @@ typedef struct HERO {
 
 } HERO;
 
+typedef struct REGISTRYPARAMS
+{
+	DWORD LogLevel;
+
+} REGISTRYPARAMS;
+
 LRESULT CALLBACK MainWindowProc(_In_ HWND WindowHandle, _In_  UINT Message, _In_  WPARAM WParam, _In_  LPARAM LParam);
 
 DWORD CreateMainGameWindow(void);
@@ -166,6 +186,12 @@ DWORD Load32BppBitmapFromFile(_In_ char* FileName, _Inout_ GAMEBITMAP* GameBitMa
 DWORD InitializeHero(void);
 
 void Blit32BppBitmapToBuffer(_In_ GAMEBITMAP* GameBitMap, _In_ uint16_t x, _In_ uint16_t y);
+
+void BlitStringToBuffer(_In_ char* String, _In_ GAMEBITMAP* FontSheet, _In_ PIXEL32* Color, _In_ uint16_t x, _In_ uint16_t y);
+
+DWORD LoadRegistryParameters(void);
+
+void LogMessageA(_In_ DWORD LogLevel, _In_ char* Message, _In_ ...);
 
 #ifdef SIMD
 __forceinline void ClearScreen(_In_ __m128i* Color);
