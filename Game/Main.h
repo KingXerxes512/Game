@@ -1,5 +1,7 @@
 #pragma once
 
+#define ASSERT(Expression) if (!(Expression)) { *(int*)0 = 0; }
+
 #define GAME_NAME "Game_B"
 
 #define GAME_RES_WIDTH	384
@@ -46,28 +48,38 @@
 
 #define FACING_UPWARD_2	11
 
-#define DIRECTION_DOWN	0
+typedef enum DIRECTION
+{
+	Down =	0,
 
-#define DIRECTION_LEFT	3
+	Left =	3,
 
-#define DIRECTION_RIGHT	6
+	Right = 6,
 
-#define DIRECTION_UP	9
+	Up =	9
+} DIRECTION;
 
 #define FONT_SHEET_CHARACTERS_PER_ROW 98
 
-
 #define LOG_LEVEL_NONE	0 
 
-#define LOG_LEVEL_INFO	1
+#define LOG_LEVEL_ERROR 1
 
 #define LOG_LEVEL_WARN	2
 
-#define LOG_LEVEL_ERROR 3
+#define LOG_LEVEL_INFO	3
 
 #define LOG_LEVEL_DEBUG 4
 
 #define LOG_FILE_NAME GAME_NAME ".log"
+
+#define LOGINFO(Message, ...) LogMessageA(LOG_LEVEL_INFO, Message, __VA_ARGS__)
+
+#define LOGWARN(Message, ...) LogMessageA(LOG_LEVEL_WARN, Message, __VA_ARGS__)
+
+#define LOGERROR(Message, ...) LogMessageA(LOG_LEVEL_ERROR, Message, __VA_ARGS__)
+
+#define LOGDEBUG(Message, ...) LogMessageA(LOG_LEVEL_DEBUG, Message, __VA_ARGS__)
 
 #pragma warning(disable: 4820) // padding data structure warning
 
@@ -151,7 +163,7 @@ typedef struct HERO {
 
 	uint8_t MovementRemaining;
 
-	uint8_t Direction;
+	DIRECTION Direction;
 
 	uint8_t CurrentArmor;
 
@@ -192,6 +204,8 @@ void BlitStringToBuffer(_In_ char* String, _In_ GAMEBITMAP* FontSheet, _In_ PIXE
 DWORD LoadRegistryParameters(void);
 
 void LogMessageA(_In_ DWORD LogLevel, _In_ char* Message, _In_ ...);
+
+void DrawDebugInfo(void);
 
 #ifdef SIMD
 __forceinline void ClearScreen(_In_ __m128i* Color);

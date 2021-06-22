@@ -1,2 +1,7 @@
 
-[06/21/2021 23:22:17.261][INFO] [LoadRegistryParameters] Log Level is 4.
+[06/22/2021 18:53:57.631][INFO] [LoadRegistryParameters] Log Level is 4.
+[06/22/2021 18:53:57.632][INFO] [WinMain] Informational
+[06/22/2021 18:53:57.635][WARN] [WinMain] Warning
+[06/22/2021 18:53:57.637][ERROR][WinMain] Error
+[06/22/2021 18:53:57.638][DEBUG][WinMain] Debug
+[06/22/2021 18:53:57.669][ERROR][WinMain] Load32BppBitmapFromFile failed!

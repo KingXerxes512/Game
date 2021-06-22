@@ -1,6 +1,5 @@
 ﻿  Main.c
-C:\Users\lcrod\Documents\C\Game\Game\Main.c(199,47): warning C4244: '=': conversion from 'int64_t' to 'double', possible loss of data
-C:\Users\lcrod\Documents\C\Game\Game\Main.c(1451,51): warning C4133: 'function': incompatible types - from 'PIXEL32 *' to '__m128i *'
+C:\Users\lcrod\Documents\C\Game\Game\Main.c(1450,51): warning C4133: 'function': incompatible types - from 'PIXEL32 *' to '__m128i *'
   Game.vcxproj -> C:\Users\lcrod\Documents\C\Game\Game\x64\Debug\Game.exe
   C:\Users\lcrod\Documents\C\Game\Game\Assets\6x7Font.bmpx
   C:\Users\lcrod\Documents\C\Game\Game\Assets\Chara-Main.png
