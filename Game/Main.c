@@ -13,9 +13,15 @@
 
 #pragma warning(pop) 
 
+#include <Xinput.h>
+
 #include "Main.h"
 
+#include "Menus.h"
+
 #pragma comment(lib, "Winmm.lib")
+
+#pragma comment(lib, "XInput.lib")
 
 HWND gGameWindow;
 
@@ -32,6 +38,10 @@ HERO gPlayer;
 BOOL gWindowHasFocus;
 
 REGISTRYPARAMS gRegistryParams;
+
+XINPUT_STATE gGamepadState;
+
+int8_t gGamepadID = -1;
 
 int __stdcall WinMain(_In_ HINSTANCE Instance, _In_opt_ HINSTANCE PreviousInstance, _In_ PSTR CommandLine, _In_ INT CmdShow)
 {
@@ -59,14 +69,6 @@ int __stdcall WinMain(_In_ HINSTANCE Instance, _In_opt_ HINSTANCE PreviousInstan
 	{
 		goto Exit;
 	}
-
-	LOGINFO("[%s] Informational", __FUNCTION__);
-
-	LOGWARN("[%s] Warning", __FUNCTION__);
-	
-	LOGERROR("[%s] Error", __FUNCTION__);
-
-	LOGDEBUG("[%s] Debug", __FUNCTION__);
 
 	if ((NtDllModuleHandle = GetModuleHandleA("ntdll.dll")) == NULL)
 	{
@@ -218,6 +220,8 @@ int __stdcall WinMain(_In_ HINSTANCE Instance, _In_opt_ HINSTANCE PreviousInstan
 		if (gPerformanceData.TotalFramesRendered % CALCULATE_AVG_FPS_EVERY_X_FRAMES == 0)
 		{
 			GetSystemTimeAsFileTime((FILETIME*)&gPerformanceData.CurrentSystemTime);
+
+			FindFirstConnectedGamepad();
 
 			GetProcessTimes(ProcessHandle,
 				&ProcessCreationTime,
@@ -422,6 +426,22 @@ void ProcessHeroInput(void)
 
 	static int16_t DownKeyWasDown = 0;
 
+	if (gGamepadID > -1)
+	{
+		if (XInputGetState(gGamepadID, &gGamepadState) == ERROR_SUCCESS)
+		{
+			EscapeKeyIsDown |= gGamepadState.Gamepad.wButtons & XINPUT_GAMEPAD_BACK;
+
+			LeftKeyIsDown	|= gGamepadState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT;
+
+			RightKeyIsDown	|= gGamepadState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT;
+
+			UpKeyIsDown		|= gGamepadState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP;
+
+			DownKeyIsDown	|= gGamepadState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN;
+		}
+	}
+
 	if (EscapeKeyIsDown)
 	{
 		SendMessageA(gGameWindow, WM_CLOSE, 0, 0);
@@ -440,7 +460,7 @@ void ProcessHeroInput(void)
 			{
 				gPlayer.MovementRemaining = 16;
 
-				gPlayer.Direction = Down;
+				gPlayer.Direction = DOWN;
 			}
 		}
 		else if (LeftKeyIsDown)
@@ -449,7 +469,7 @@ void ProcessHeroInput(void)
 			{
 				gPlayer.MovementRemaining = 16;
 
-				gPlayer.Direction = Left;
+				gPlayer.Direction = LEFT;
 			}
 		}
 		else if (RightKeyIsDown)
@@ -458,7 +478,7 @@ void ProcessHeroInput(void)
 			{
 				gPlayer.MovementRemaining = 16;
 
-				gPlayer.Direction = Right;
+				gPlayer.Direction = RIGHT;
 			}
 		}
 		else if (UpKeyIsDown)
@@ -467,7 +487,7 @@ void ProcessHeroInput(void)
 			{
 				gPlayer.MovementRemaining = 16;
 
-				gPlayer.Direction = Up;
+				gPlayer.Direction = UP;
 			}
 		}
 	}
@@ -475,19 +495,19 @@ void ProcessHeroInput(void)
 	{
 		gPlayer.MovementRemaining--;
 
-		if (gPlayer.Direction == Down)
+		if (gPlayer.Direction == DOWN)
 		{
 			gPlayer.ScreenPosY++;
 		}
-		else if (gPlayer.Direction == Left)
+		else if (gPlayer.Direction == LEFT)
 		{
 			gPlayer.ScreenPosX--;
 		}
-		else if (gPlayer.Direction == Right)
+		else if (gPlayer.Direction == RIGHT)
 		{
 			gPlayer.ScreenPosX++;
 		}
-		else if (gPlayer.Direction == Up)
+		else if (gPlayer.Direction == UP)
 		{
 			gPlayer.ScreenPosY--;
 		}
@@ -636,6 +656,15 @@ Exit:
 		CloseHandle(FileHandle);
 	}
 
+	if (Error == ERROR_SUCCESS)
+	{
+		LOGINFO("[%s] Loading successful: %s", __FUNCTION__, FileName);
+	}
+	else
+	{
+		LOGERROR("[%s] Loading failed: %s! Error 0x08lx!", __FUNCTION__, FileName, Error);
+	}
+
 	return Error;
 }
 
@@ -649,7 +678,7 @@ DWORD InitializeHero(void)
 
 	gPlayer.CurrentArmor = SUIT_0;
 
-	gPlayer.Direction = Down;
+	gPlayer.Direction = DOWN;
 
 	gPlayer.MovementRemaining = 0;
 
@@ -1410,9 +1439,9 @@ void RenderFrameGraphics(void)
 	
 #endif 
 
-	PIXEL32 Green = { 0x00, 0xff, 0x00, 0xff };
+	//PIXEL32 Green = { 0x00, 0xff, 0x00, 0xff };
 
-	BlitStringToBuffer("GAME OVER", &g6x7Font, &Green, 60, 60);
+	// BlitStringToBuffer("GAME OVER", &g6x7Font, &Green, 60, 60);
 
 	Blit32BppBitmapToBuffer(&gPlayer.Sprite[gPlayer.CurrentArmor][gPlayer.Direction + gPlayer.SpriteIndex],
 		gPlayer.ScreenPosX,
@@ -1536,7 +1565,7 @@ DWORD LoadRegistryParameters(void)
 
 			LOGINFO("[%s] Registry value 'LogLevel' not found. Using default of 0. (LOG_LEVEL_NONE)", __FUNCTION__);
 
-			gRegistryParams.LogLevel = LOG_LEVEL_NONE;
+			gRegistryParams.LogLevel = LL_NONE;
 		}
 		else
 		{
@@ -1558,7 +1587,7 @@ Exit:
 	return Result;
 }
 
-void LogMessageA(_In_ DWORD LogLevel, _In_ char* Message, _In_ ...)
+void LogMessageA(_In_ LOGLEVEL LogLevel, _In_ char* Message, _In_ ...)
 {
 	size_t MessageLength = strlen(Message);
 
@@ -1585,34 +1614,34 @@ void LogMessageA(_In_ DWORD LogLevel, _In_ char* Message, _In_ ...)
 
 	if (MessageLength < 1 || MessageLength > 4096)
 	{
-		return;
+		ASSERT(FALSE, "Message was either too short or too long!");
 	}
 
 	switch (LogLevel)
 	{
-		case LOG_LEVEL_NONE:
+		case LL_NONE:
 		{
 			return;
 		}
-		case LOG_LEVEL_INFO:
+		case LL_INFO:
 		{
 			strcpy_s(SeverityString, sizeof(SeverityString), "[INFO] ");
 
 			break;
 		}
-		case LOG_LEVEL_WARN:
+		case LL_WARN:
 		{
 			strcpy_s(SeverityString, sizeof(SeverityString), "[WARN] ");
 
 			break;
 		}
-		case LOG_LEVEL_ERROR:
+		case LL_ERROR:
 		{
-			strcpy_s(SeverityString, sizeof(SeverityString), "[ERROR]");
+strcpy_s(SeverityString, sizeof(SeverityString), "[ERROR]");
 
-			break;
+break;
 		}
-		case LOG_LEVEL_DEBUG:
+		case LL_DEBUG:
 		{
 			strcpy_s(SeverityString, sizeof(SeverityString), "[DEBUG]");
 
@@ -1620,7 +1649,7 @@ void LogMessageA(_In_ DWORD LogLevel, _In_ char* Message, _In_ ...)
 		}
 		default:
 		{
-			ASSERT(FALSE);
+			ASSERT(FALSE, "Unrecognized log level!");
 		}
 	}
 
@@ -1639,7 +1668,7 @@ void LogMessageA(_In_ DWORD LogLevel, _In_ char* Message, _In_ ...)
 
 	if ((LogFileHandle = CreateFileA(LOG_FILE_NAME, FILE_APPEND_DATA, FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL)) == INVALID_HANDLE_VALUE)
 	{
-		return;
+		ASSERT(FALSE, "Failed to access log file!");
 	}
 
 	EndOfFile = SetFilePointer(LogFileHandle, 0, NULL, FILE_END);
@@ -1662,23 +1691,23 @@ void DrawDebugInfo(void)
 
 	char DebugTextBuffer[64] = { 0 };
 
-	sprintf_s(DebugTextBuffer, _countof(DebugTextBuffer), "FPS Raw:    %.01f", gPerformanceData.RawFPSAverage);
+	sprintf_s(DebugTextBuffer, _countof(DebugTextBuffer), "FPSRaw:  %.01f", gPerformanceData.RawFPSAverage);
 
 	BlitStringToBuffer(DebugTextBuffer, &g6x7Font, &White, 0, 0);
 
-	sprintf_s(DebugTextBuffer, _countof(DebugTextBuffer), "FPS Cooked: %.01f", gPerformanceData.CookedFPSAverage);
+	sprintf_s(DebugTextBuffer, _countof(DebugTextBuffer), "FPSCookd:%.01f", gPerformanceData.CookedFPSAverage);
 
 	BlitStringToBuffer(DebugTextBuffer, &g6x7Font, &White, 0, 8);
 
-	sprintf_s(DebugTextBuffer, _countof(DebugTextBuffer), "Min Timer Res: %.02f", gPerformanceData.MinimumTimerResolution / 10000.0f);
+	sprintf_s(DebugTextBuffer, _countof(DebugTextBuffer), "MinTimer:%.02f", gPerformanceData.MinimumTimerResolution / 10000.0f);
 
 	BlitStringToBuffer(DebugTextBuffer, &g6x7Font, &White, 0, 16);
 
-	sprintf_s(DebugTextBuffer, _countof(DebugTextBuffer), "Max Timer Res: %.02f", gPerformanceData.MaximumTimerResolution / 10000.0f);
+	sprintf_s(DebugTextBuffer, _countof(DebugTextBuffer), "MaxTimer:%.02f", gPerformanceData.MaximumTimerResolution / 10000.0f);
 
 	BlitStringToBuffer(DebugTextBuffer, &g6x7Font, &White, 0, 24);
 
-	sprintf_s(DebugTextBuffer, _countof(DebugTextBuffer), "Cur Timer Res: %.02f", gPerformanceData.CurrentTimerResolution / 10000.0f);
+	sprintf_s(DebugTextBuffer, _countof(DebugTextBuffer), "CurTimer:%.02f", gPerformanceData.CurrentTimerResolution / 10000.0f);
 
 	BlitStringToBuffer(DebugTextBuffer, &g6x7Font, &White, 0, 32);
 
@@ -1686,19 +1715,54 @@ void DrawDebugInfo(void)
 
 	BlitStringToBuffer(DebugTextBuffer, &g6x7Font, &White, 0, 40);
 
-	sprintf_s(DebugTextBuffer, _countof(DebugTextBuffer), "Memory: %zu kB", gPerformanceData.MemInfo.PrivateUsage / 1000);
+	sprintf_s(DebugTextBuffer, _countof(DebugTextBuffer), "Memory:  %zu kB", gPerformanceData.MemInfo.PrivateUsage / 1000);
 
 	BlitStringToBuffer(DebugTextBuffer, &g6x7Font, &White, 0, 48);
 
-	sprintf_s(DebugTextBuffer, _countof(DebugTextBuffer), "CPU Percentage: %.02f %%", gPerformanceData.CPUPercent);
+	sprintf_s(DebugTextBuffer, _countof(DebugTextBuffer), "CPU:     %.02f %%", gPerformanceData.CPUPercent);
 
 	BlitStringToBuffer(DebugTextBuffer, &g6x7Font, &White, 0, 56);
 
-	sprintf_s(DebugTextBuffer, _countof(DebugTextBuffer), "Total Frames: %llu", gPerformanceData.TotalFramesRendered);
+	sprintf_s(DebugTextBuffer, _countof(DebugTextBuffer), "FramesT: %llu", gPerformanceData.TotalFramesRendered);
 
 	BlitStringToBuffer(DebugTextBuffer, &g6x7Font, &White, 0, 64);
 
-	sprintf_s(DebugTextBuffer, _countof(DebugTextBuffer), "Screen Pos: (%d,%d)", gPlayer.ScreenPosX, gPlayer.ScreenPosY);
+	sprintf_s(DebugTextBuffer, _countof(DebugTextBuffer), "ScreenXY:%d,%d", gPlayer.ScreenPosX, gPlayer.ScreenPosY);
 
 	BlitStringToBuffer(DebugTextBuffer, &g6x7Font, &White, 0, 72);
+}
+
+void FindFirstConnectedGamepad(void)
+{
+	gGamepadID = -1;
+
+	for (int8_t GamepadIndex = 0; GamepadIndex < XUSER_MAX_COUNT && gGamepadID == -1; GamepadIndex++)
+	{
+		XINPUT_STATE State = { 0 };
+
+		if (XInputGetState(GamepadIndex, &State) == ERROR_SUCCESS)
+		{
+			gGamepadID = GamepadIndex;
+		}
+	}
+}
+
+void MenuItem_TitleScreen_Resume(void)
+{
+
+}
+
+void MenuItem_TitleScreen_StartNew(void)
+{
+
+}
+
+void MenuItem_TitleScreen_Options(void)
+{
+
+}
+
+void MenuItem_TitleScreen_Exit(void)
+{
+
 }

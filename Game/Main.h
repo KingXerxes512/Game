@@ -1,6 +1,14 @@
 #pragma once
 
-#define ASSERT(Expression) if (!(Expression)) { *(int*)0 = 0; }
+#ifdef _DEBUG
+
+#define ASSERT(Expression, Message) if (!(Expression)) { *(int*)0 = 0; }
+
+#else
+
+#define ASSERT(Expression, Message) ((void)0);
+
+#endif
 
 #define GAME_NAME "Game_B"
 
@@ -50,42 +58,49 @@
 
 typedef enum DIRECTION
 {
-	Down =	0,
+	DOWN =	0,
 
-	Left =	3,
+	LEFT =	3,
 
-	Right = 6,
+	RIGHT = 6,
 
-	Up =	9
+	UP =	9
 } DIRECTION;
+
+typedef enum LOGLEVEL
+{
+	LL_NONE = 0,
+
+	LL_ERROR = 1,
+
+	LL_WARN = 2,
+
+	LL_INFO = 3,
+
+	LL_DEBUG = 4
+} LOGLEVEL;
 
 #define FONT_SHEET_CHARACTERS_PER_ROW 98
 
-#define LOG_LEVEL_NONE	0 
-
-#define LOG_LEVEL_ERROR 1
-
-#define LOG_LEVEL_WARN	2
-
-#define LOG_LEVEL_INFO	3
-
-#define LOG_LEVEL_DEBUG 4
-
 #define LOG_FILE_NAME GAME_NAME ".log"
 
-#define LOGINFO(Message, ...) LogMessageA(LOG_LEVEL_INFO, Message, __VA_ARGS__)
+#define LOGINFO(Message, ...) LogMessageA(LL_INFO, Message, __VA_ARGS__)
 
-#define LOGWARN(Message, ...) LogMessageA(LOG_LEVEL_WARN, Message, __VA_ARGS__)
+#define LOGWARN(Message, ...) LogMessageA(LL_WARN, Message, __VA_ARGS__)
 
-#define LOGERROR(Message, ...) LogMessageA(LOG_LEVEL_ERROR, Message, __VA_ARGS__)
+#define LOGERROR(Message, ...) LogMessageA(LL_ERROR, Message, __VA_ARGS__)
 
-#define LOGDEBUG(Message, ...) LogMessageA(LOG_LEVEL_DEBUG, Message, __VA_ARGS__)
+#define LOGDEBUG(Message, ...) LogMessageA(LL_DEBUG, Message, __VA_ARGS__)
 
 #pragma warning(disable: 4820) // padding data structure warning
 
 #pragma warning(disable: 5045) // spectre/meltdown CPU vulnerability
 
 #pragma warning(disable: 4710) // function not inlined
+
+#pragma warning(disable: 4018) // can't control enum data types
+
+#pragma warning(disable: 4133) // 32 bit to 128 bit error
 
 typedef LONG(NTAPI* _NtQueryTimerResolution) (OUT PULONG MinimumResolution, OUT PULONG MaximumResolution, OUT PULONG CurrentResolution);
 
@@ -203,9 +218,11 @@ void BlitStringToBuffer(_In_ char* String, _In_ GAMEBITMAP* FontSheet, _In_ PIXE
 
 DWORD LoadRegistryParameters(void);
 
-void LogMessageA(_In_ DWORD LogLevel, _In_ char* Message, _In_ ...);
+void LogMessageA(_In_ LOGLEVEL LogLevel, _In_ char* Message, _In_ ...);
 
 void DrawDebugInfo(void);
+
+void FindFirstConnectedGamepad(void);
 
 #ifdef SIMD
 __forceinline void ClearScreen(_In_ __m128i* Color);
