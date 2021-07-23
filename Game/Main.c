@@ -19,7 +19,7 @@
 
 #include "Menus.h"
 
-#include "Logging.h"
+#include "Logging/Logging.h"
 
 #pragma comment(lib, "Winmm.lib")
 

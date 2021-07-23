@@ -1,9 +1,5 @@
 #pragma once
 
-#define GAME_NAME "Game_B"
-
-#define LOG_FILE_NAME GAME_NAME ".log"
-
 #define GAME_RES_WIDTH	384
 
 #define GAME_RES_HEIGHT 240

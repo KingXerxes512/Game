@@ -1,4 +1,7 @@
-﻿  Main.c
+﻿  Logging.c
+  Main.c
+  Running Code Analysis for C/C++...
+  Generating Code...
   Game.vcxproj -> C:\Users\lcrod\Documents\C\Game\Game\x64\Debug\Game.exe
   C:\Users\lcrod\Documents\C\Game\Game\Assets\6x7Font.bmpx
   C:\Users\lcrod\Documents\C\Game\Game\Assets\Chara-Main.png

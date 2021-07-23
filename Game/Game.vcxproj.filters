@@ -13,16 +13,16 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Logging">
-      <UniqueIdentifier>{9531df82-8add-4d2a-a513-ba69a5afbc65}</UniqueIdentifier>
+    <Filter Include="Resource Files\Logging">
+      <UniqueIdentifier>{3c18870c-99a0-4664-9854-d5e5b72cfab6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Libraries\Logging\Logging.c">
-      <Filter>Logging</Filter>
+    <ClCompile Include="Logging.c">
+      <Filter>Resource Files\Logging</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -32,8 +32,8 @@
     <ClInclude Include="Menus.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Libraries\Logging\Logging.h">
-      <Filter>Logging</Filter>
+    <ClInclude Include="Logging.h">
+      <Filter>Resource Files\Logging</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

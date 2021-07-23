@@ -1,0 +1,15 @@
+
+[07/22/2021 23:41:41.328][INFO] [LoadRegistryParameters] Log Level is 4.
+[07/22/2021 23:41:41.365][INFO] [Load32BppBitmapFromFile] Loading successful: .\Assets\6x7Font.bmpx
+[07/22/2021 23:41:41.366][INFO] [Load32BppBitmapFromFile] Loading successful: .\Assets\Hero_Suit0_Down_Standing.bmpx
+[07/22/2021 23:41:41.367][INFO] [Load32BppBitmapFromFile] Loading successful: .\Assets\Hero_Suit0_Down_Walk1.bmpx
+[07/22/2021 23:41:41.367][INFO] [Load32BppBitmapFromFile] Loading successful: .\Assets\Hero_Suit0_Down_Walk2.bmpx
+[07/22/2021 23:41:41.368][INFO] [Load32BppBitmapFromFile] Loading successful: .\Assets\Hero_Suit0_Left_Standing.bmpx
+[07/22/2021 23:41:41.368][INFO] [Load32BppBitmapFromFile] Loading successful: .\Assets\Hero_Suit0_Left_Walk1.bmpx
+[07/22/2021 23:41:41.369][INFO] [Load32BppBitmapFromFile] Loading successful: .\Assets\Hero_Suit0_Left_Walk2.bmpx
+[07/22/2021 23:41:41.369][INFO] [Load32BppBitmapFromFile] Loading successful: .\Assets\Hero_Suit0_Right_Standing.bmpx
+[07/22/2021 23:41:41.369][INFO] [Load32BppBitmapFromFile] Loading successful: .\Assets\Hero_Suit0_Right_Walk1.bmpx
+[07/22/2021 23:41:41.370][INFO] [Load32BppBitmapFromFile] Loading successful: .\Assets\Hero_Suit0_Right_Walk2.bmpx
+[07/22/2021 23:41:41.370][INFO] [Load32BppBitmapFromFile] Loading successful: .\Assets\Hero_Suit0_Up_Standing.bmpx
+[07/22/2021 23:41:41.371][INFO] [Load32BppBitmapFromFile] Loading successful: .\Assets\Hero_Suit0_Up_Walk1.bmpx
+[07/22/2021 23:41:41.371][INFO] [Load32BppBitmapFromFile] Loading successful: .\Assets\Hero_Suit0_Up_Walk2.bmpx
