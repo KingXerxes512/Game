@@ -1,16 +1,8 @@
 #pragma once
 
-#ifdef _DEBUG
-
-#define ASSERT(Expression, Message) if (!(Expression)) { *(int*)0 = 0; }
-
-#else
-
-#define ASSERT(Expression, Message) ((void)0);
-
-#endif
-
 #define GAME_NAME "Game_B"
+
+#define LOG_FILE_NAME GAME_NAME ".log"
 
 #define GAME_RES_WIDTH	384
 
@@ -67,38 +59,13 @@ typedef enum DIRECTION
 	UP =	9
 } DIRECTION;
 
-typedef enum LOGLEVEL
-{
-	LL_NONE = 0,
-
-	LL_ERROR = 1,
-
-	LL_WARN = 2,
-
-	LL_INFO = 3,
-
-	LL_DEBUG = 4
-} LOGLEVEL;
-
 #define FONT_SHEET_CHARACTERS_PER_ROW 98
-
-#define LOG_FILE_NAME GAME_NAME ".log"
-
-#define LOGINFO(Message, ...) LogMessageA(LL_INFO, Message, __VA_ARGS__)
-
-#define LOGWARN(Message, ...) LogMessageA(LL_WARN, Message, __VA_ARGS__)
-
-#define LOGERROR(Message, ...) LogMessageA(LL_ERROR, Message, __VA_ARGS__)
-
-#define LOGDEBUG(Message, ...) LogMessageA(LL_DEBUG, Message, __VA_ARGS__)
 
 #pragma warning(disable: 4820) // padding data structure warning
 
 #pragma warning(disable: 5045) // spectre/meltdown CPU vulnerability
 
 #pragma warning(disable: 4710) // function not inlined
-
-#pragma warning(disable: 4018) // can't control enum data types
 
 #pragma warning(disable: 4133) // 32 bit to 128 bit error
 
@@ -192,12 +159,6 @@ typedef struct HERO {
 
 } HERO;
 
-typedef struct REGISTRYPARAMS
-{
-	DWORD LogLevel;
-
-} REGISTRYPARAMS;
-
 LRESULT CALLBACK MainWindowProc(_In_ HWND WindowHandle, _In_  UINT Message, _In_  WPARAM WParam, _In_  LPARAM LParam);
 
 DWORD CreateMainGameWindow(void);
@@ -217,8 +178,6 @@ void Blit32BppBitmapToBuffer(_In_ GAMEBITMAP* GameBitMap, _In_ uint16_t x, _In_ 
 void BlitStringToBuffer(_In_ char* String, _In_ GAMEBITMAP* FontSheet, _In_ PIXEL32* Color, _In_ uint16_t x, _In_ uint16_t y);
 
 DWORD LoadRegistryParameters(void);
-
-void LogMessageA(_In_ LOGLEVEL LogLevel, _In_ char* Message, _In_ ...);
 
 void DrawDebugInfo(void);
 
