@@ -88,6 +88,8 @@ void LogMessageA(_In_ LOGLEVEL LogLevel, _In_ char* Message, _In_ ...)
 
 	EndOfFile = SetFilePointer(LogFileHandle, 0, NULL, FILE_END);
 
+	printf("%s %s %s", DateTimeString, SeverityString, FormattedString);
+
 	WriteFile(LogFileHandle, DateTimeString, (DWORD)strlen(DateTimeString), &NumberOfBytesWritten, NULL);
 
 	WriteFile(LogFileHandle, SeverityString, (DWORD)strlen(SeverityString), &NumberOfBytesWritten, NULL);

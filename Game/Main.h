@@ -12,7 +12,13 @@
 
 #define TARGET_MICROSECONDS_PER_FRAME		16667ULL // 6061
 
-#define SIMD
+#define AVX
+
+// #define SIMD
+
+#if defined(AVX) || defined(SIMD)
+#define ADVANCED_REGISTERS
+#endif
 
 #define SUIT_0	0
 
@@ -55,15 +61,28 @@ typedef enum DIRECTION
 	UP =	9
 } DIRECTION;
 
+typedef enum GAMESTATE
+{
+	GAMESTATE_OPENINGSPLASHSCREEN,
+
+	GAMESTATE_TITLESCREEN,
+
+	GAMESTATE_OVERWORLD,
+
+	GAMESTATE_BATTLE,
+
+	GAMESTATE_OPTIONSSCREEN,
+
+	GAMESTATE_EXITYESNOSCREEN
+} GAMESTATE;
+
 #define FONT_SHEET_CHARACTERS_PER_ROW 98
 
 #pragma warning(disable: 4820) // padding data structure warning
 
-#pragma warning(disable: 5045) // spectre/meltdown CPU vulnerability
+#pragma warning(disable: 5045) // specter/meltdown CPU vulnerability
 
 #pragma warning(disable: 4710) // function not inlined
-
-#pragma warning(disable: 4133) // 32 bit to 128 bit error
 
 typedef LONG(NTAPI* _NtQueryTimerResolution) (OUT PULONG MinimumResolution, OUT PULONG MaximumResolution, OUT PULONG CurrentResolution);
 
@@ -179,8 +198,31 @@ void DrawDebugInfo(void);
 
 void FindFirstConnectedGamepad(void);
 
-#ifdef SIMD
-__forceinline void ClearScreen(_In_ __m128i* Color);
-#else
-__forceinline void ClearScreen(_In_ PIXEL32* Pixel);
+#ifdef AVX
+
+__forceinline void ClearScreen(_In_ __m256i* Color);
+
 #endif
+
+#ifdef SIMD
+
+__forceinline void ClearScreen(_In_ __m128i* Color);
+
+#endif
+
+#ifndef ADVANCED_REGISTERS
+
+__forceinline void ClearScreen(_In_ PIXEL32* Pixel);
+
+#endif
+
+void DrawOpeningSplashScreen(void);
+
+void DrawTitleScreen(void);
+
+void PPI_OpeningSplashScreen(void);
+
+void PPI_TitleScreen(void);
+
+void PPI_Overworld(void);
+

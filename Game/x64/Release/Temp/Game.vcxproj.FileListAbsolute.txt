@@ -1,0 +1,2 @@
+C:\Users\lcrod\Documents\C\Game\Game\x64\Release\Game.exe.lastcodeanalysissucceeded
+C:\Users\lcrod\Documents\C\Game\Game\x64\Release\Temp\NativeCodeAnalysis.read.1.tlog

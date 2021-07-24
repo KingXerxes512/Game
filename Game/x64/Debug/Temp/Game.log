@@ -1,7 +1,19 @@
-﻿  Logging.c
-  Main.c
-  Running Code Analysis for C/C++...
-  Generating Code...
+﻿  Main.c
+C:\Users\lcrod\Documents\C\Game\Game\Main.c(433,2): warning C4061: enumerator 'GAMESTATE_BATTLE' in switch of enum 'GAMESTATE' is not explicitly handled by a case label
+C:\Users\lcrod\Documents\C\Game\Game\Main.h(64): message : see declaration of 'GAMESTATE'
+C:\Users\lcrod\Documents\C\Game\Game\Main.c(433,2): warning C4061: enumerator 'GAMESTATE_OPTIONSSCREEN' in switch of enum 'GAMESTATE' is not explicitly handled by a case label
+C:\Users\lcrod\Documents\C\Game\Game\Main.h(64): message : see declaration of 'GAMESTATE'
+C:\Users\lcrod\Documents\C\Game\Game\Main.c(433,2): warning C4061: enumerator 'GAMESTATE_EXITYESNOSCREEN' in switch of enum 'GAMESTATE' is not explicitly handled by a case label
+C:\Users\lcrod\Documents\C\Game\Game\Main.h(64): message : see declaration of 'GAMESTATE'
+C:\Users\lcrod\Documents\C\Game\Game\Main.c(1318,2): warning C4061: enumerator 'GAMESTATE_OVERWORLD' in switch of enum 'GAMESTATE' is not explicitly handled by a case label
+C:\Users\lcrod\Documents\C\Game\Game\Main.h(64): message : see declaration of 'GAMESTATE'
+C:\Users\lcrod\Documents\C\Game\Game\Main.c(1318,2): warning C4061: enumerator 'GAMESTATE_BATTLE' in switch of enum 'GAMESTATE' is not explicitly handled by a case label
+C:\Users\lcrod\Documents\C\Game\Game\Main.h(64): message : see declaration of 'GAMESTATE'
+C:\Users\lcrod\Documents\C\Game\Game\Main.c(1318,2): warning C4061: enumerator 'GAMESTATE_OPTIONSSCREEN' in switch of enum 'GAMESTATE' is not explicitly handled by a case label
+C:\Users\lcrod\Documents\C\Game\Game\Main.h(64): message : see declaration of 'GAMESTATE'
+C:\Users\lcrod\Documents\C\Game\Game\Main.c(1318,2): warning C4061: enumerator 'GAMESTATE_EXITYESNOSCREEN' in switch of enum 'GAMESTATE' is not explicitly handled by a case label
+C:\Users\lcrod\Documents\C\Game\Game\Main.h(64): message : see declaration of 'GAMESTATE'
+C:\Users\lcrod\Documents\C\Game\Game\Main.c(1605,101): warning C4267: 'function': conversion from 'size_t' to 'uint16_t', possible loss of data
   Game.vcxproj -> C:\Users\lcrod\Documents\C\Game\Game\x64\Debug\Game.exe
   C:\Users\lcrod\Documents\C\Game\Game\Assets\6x7Font.bmpx
   C:\Users\lcrod\Documents\C\Game\Game\Assets\Chara-Main.png

@@ -1,0 +1,28 @@
+﻿  Logging.c
+  Main.c
+  Running Code Analysis for C/C++...
+  Generating code
+  Previous IPDB not found, fall back to full compilation.
+C:\Users\lcrod\Documents\C\Game\Game\Main.c(68): warning C4711: function 'LoadRegistryParameters' selected for automatic inline expansion
+C:\Users\lcrod\Documents\C\Game\Game\Main.c(95): warning C4711: function 'GameIsAlreadyRunning' selected for automatic inline expansion
+C:\Users\lcrod\Documents\C\Game\Game\Main.c(187): warning C4711: function 'RenderFrameGraphics' selected for automatic inline expansion
+C:\Users\lcrod\Documents\C\Game\Game\Main.c(224): warning C4711: function 'FindFirstConnectedGamepad' selected for automatic inline expansion
+  All 28 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Finished generating code
+  Game.vcxproj -> C:\Users\lcrod\Documents\C\Game\Game\x64\Release\Game.exe
+  C:\Users\lcrod\Documents\C\Game\Game\Assets\6x7Font.bmpx
+  C:\Users\lcrod\Documents\C\Game\Game\Assets\Chara-Main.png
+  C:\Users\lcrod\Documents\C\Game\Game\Assets\Hero_Suit0_Down_Standing.bmpx
+  C:\Users\lcrod\Documents\C\Game\Game\Assets\Hero_Suit0_Down_Walk1.bmpx
+  C:\Users\lcrod\Documents\C\Game\Game\Assets\Hero_Suit0_Down_Walk2.bmpx
+  C:\Users\lcrod\Documents\C\Game\Game\Assets\Hero_Suit0_Left_Standing.bmpx
+  C:\Users\lcrod\Documents\C\Game\Game\Assets\Hero_Suit0_Left_Walk1.bmpx
+  C:\Users\lcrod\Documents\C\Game\Game\Assets\Hero_Suit0_Left_Walk2.bmpx
+  C:\Users\lcrod\Documents\C\Game\Game\Assets\Hero_Suit0_Right_Standing.bmpx
+  C:\Users\lcrod\Documents\C\Game\Game\Assets\Hero_Suit0_Right_Walk1.bmpx
+  C:\Users\lcrod\Documents\C\Game\Game\Assets\Hero_Suit0_Right_Walk2.bmpx
+  C:\Users\lcrod\Documents\C\Game\Game\Assets\Hero_Suit0_Up_Standing.bmpx
+  C:\Users\lcrod\Documents\C\Game\Game\Assets\Hero_Suit0_Up_Walk1.bmpx
+  C:\Users\lcrod\Documents\C\Game\Game\Assets\Hero_Suit0_Up_Walk2.bmpx
+  C:\Users\lcrod\Documents\C\Game\Game\Assets\WIP_Chara-Main.png
+  15 File(s) copied
