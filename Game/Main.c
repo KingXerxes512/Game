@@ -70,6 +70,8 @@ int __stdcall WinMain(_In_ HINSTANCE Instance, _In_opt_ HINSTANCE PreviousInstan
 
 	if (LoadRegistryParameters() != ERROR_SUCCESS)
 	{
+		LOGERROR("[%s] Couldn't load registry params! Error 0x%08lx!", __FUNCTION__, GetLastError());
+
 		goto Exit;
 	}
 
