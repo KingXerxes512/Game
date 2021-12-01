@@ -12,13 +12,9 @@
 
 #define TARGET_MICROSECONDS_PER_FRAME		16667ULL // 6061
 
+#define NUMBER_OF_SFX_SOURCE_VOICES			4
+
 #define AVX
-
-// #define SIMD
-
-#if defined(AVX) || defined(SIMD)
-#define ADVANCED_REGISTERS
-#endif
 
 #define SUIT_0	0
 
@@ -52,13 +48,13 @@
 
 typedef enum DIRECTION
 {
-	DOWN =	0,
+	DOWN = 0,
 
-	LEFT =	3,
+	LEFT = 3,
 
 	RIGHT = 6,
 
-	UP =	9
+	UP = 9
 } DIRECTION;
 
 typedef enum GAMESTATE
@@ -76,6 +72,31 @@ typedef enum GAMESTATE
 	GAMESTATE_EXITYESNOSCREEN
 } GAMESTATE;
 
+typedef struct GAMEINPUT
+{
+	int16_t EscapeKeyIsDown;
+
+	int16_t DebugKeyIsDown;
+
+	int16_t LeftKeyIsDown;
+
+	int16_t RightKeyIsDown;
+
+	int16_t UpKeyIsDown;
+
+	int16_t DownKeyIsDown;
+
+	int16_t DebugKeyWasDown;
+
+	int16_t LeftKeyWasDown;
+
+	int16_t RightKeyWasDown;
+
+	int16_t UpKeyWasDown;
+
+	int16_t DownKeyWasDown;
+} GAMEINPUT;
+
 #define FONT_SHEET_CHARACTERS_PER_ROW 98
 
 #pragma warning(disable: 4820) // padding data structure warning
@@ -89,10 +110,10 @@ typedef LONG(NTAPI* _NtQueryTimerResolution) (OUT PULONG MinimumResolution, OUT 
 _NtQueryTimerResolution NtQueryTimerResolution;
 
 typedef struct GAMEBITMAP {
-	
+
 	BITMAPINFO BitmapInfo;
-	
-	void* Memory;			
+
+	void* Memory;
 
 } GAMEBITMAP;
 
@@ -141,8 +162,6 @@ typedef struct GAMEPERFDATA {
 	int64_t CurrentSystemTime;
 
 	int64_t PreviousSystemTime;
-
-
 
 	double CPUPercent;
 
@@ -198,19 +217,17 @@ void DrawDebugInfo(void);
 
 void FindFirstConnectedGamepad(void);
 
+HRESULT InitializeSoundEngine(void);
+
 #ifdef AVX
 
 __forceinline void ClearScreen(_In_ __m256i* Color);
 
-#endif
-
-#ifdef SIMD
+#elif defined SSE2
 
 __forceinline void ClearScreen(_In_ __m128i* Color);
 
-#endif
-
-#ifndef ADVANCED_REGISTERS
+#else
 
 __forceinline void ClearScreen(_In_ PIXEL32* Pixel);
 

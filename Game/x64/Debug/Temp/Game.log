@@ -1,6 +1,7 @@
 ﻿  Main.c
   Game.vcxproj -> C:\Users\lcrod\Documents\C\Game\Game\x64\Debug\Game.exe
   C:\Users\lcrod\Documents\C\Game\Game\Assets\6x7Font.bmpx
+  C:\Users\lcrod\Documents\C\Game\Game\Assets\Assets_MenuSelect.wav
   C:\Users\lcrod\Documents\C\Game\Game\Assets\Chara-Main.png
   C:\Users\lcrod\Documents\C\Game\Game\Assets\Hero_Suit0_Down_Standing.bmpx
   C:\Users\lcrod\Documents\C\Game\Game\Assets\Hero_Suit0_Down_Walk1.bmpx
@@ -15,4 +16,4 @@
   C:\Users\lcrod\Documents\C\Game\Game\Assets\Hero_Suit0_Up_Walk1.bmpx
   C:\Users\lcrod\Documents\C\Game\Game\Assets\Hero_Suit0_Up_Walk2.bmpx
   C:\Users\lcrod\Documents\C\Game\Game\Assets\WIP_Chara-Main.png
-  15 File(s) copied
+  16 File(s) copied

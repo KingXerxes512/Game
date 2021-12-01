@@ -5,10 +5,11 @@
 #include <Windows.h>
 #include <Psapi.h>
 #include <stdint.h>		// type definitions
+#include <xaudio2.h>	// audio
 
 #define AVX
 
-#ifdef SIMD
+#ifdef SSE2
 
 #include <emmintrin.h>
 
@@ -27,9 +28,11 @@
 #include "Menus.h"
 #include "Logging/Logging.h"
 
-#pragma comment(lib, "Winmm.lib")
+#pragma comment(lib, "Winmm.lib") // Windows Multimedia Library, used for timeBeginPeriod to adjust the global system timer resolution
 
-#pragma comment(lib, "XInput.lib")
+#pragma comment(lib, "XAudio2.lib") // Audio library
+
+#pragma comment(lib, "XInput.lib") // Xbox 360 gamepad input
 
 #define FONT_CHAR_WIDTH  6 
 #define FONT_CHAR_HEIGHT 7
@@ -45,6 +48,14 @@ BOOL gWindowHasFocus;
 XINPUT_STATE gGamepadState;
 int8_t gGamepadID = -1;
 GAMESTATE gGameState = GAMESTATE_TITLESCREEN;
+GAMEINPUT gGameInput;
+IXAudio2* gXAudio;
+IXAudio2MasteringVoice* gXAudioMasteringVoice;
+IXAudio2SourceVoice* gXAudioSFXSourceVoice[NUMBER_OF_SFX_SOURCE_VOICES];
+IXAudio2SourceVoice* gXAudioMusicSouceVoice;
+uint8_t gSFXSourceVoiceSelector;
+float gSFXVolume = 0.5f;
+float gMusicVolume = 0.5f;
 
 int __stdcall WinMain(_In_ HINSTANCE Instance, _In_opt_ HINSTANCE PreviousInstance, _In_ PSTR CommandLine, _In_ INT CmdShow)
 {
@@ -52,7 +63,7 @@ int __stdcall WinMain(_In_ HINSTANCE Instance, _In_opt_ HINSTANCE PreviousInstan
 	UNREFERENCED_PARAMETER(PreviousInstance);
 	UNREFERENCED_PARAMETER(CommandLine);
 	UNREFERENCED_PARAMETER(CmdShow);
-	
+
 	MSG Message = { 0 };
 	int64_t FrameStart = 0;
 	int64_t FrameEnd = 0;
@@ -70,8 +81,16 @@ int __stdcall WinMain(_In_ HINSTANCE Instance, _In_opt_ HINSTANCE PreviousInstan
 
 	if (LoadRegistryParameters() != ERROR_SUCCESS)
 	{
-		LOGERROR("[%s] Couldn't load registry params! Error 0x%08lx!", __FUNCTION__, GetLastError());
+		goto Exit;
+	}
 
+	LOGINFO("[%s] %s is starting.", __FUNCTION__, GAME_NAME);
+
+	if (GameIsAlreadyRunning() == TRUE) // No extra instances of this program!!!
+	{
+		LOGERROR("[%s] Another instance of this program is already running!", __FUNCTION__);
+
+		MessageBoxA(NULL, "Another instance of this program is already running!", "Error!", MB_ICONEXCLAMATION | MB_OK);
 		goto Exit;
 	}
 
@@ -95,15 +114,49 @@ int __stdcall WinMain(_In_ HINSTANCE Instance, _In_opt_ HINSTANCE PreviousInstan
 
 	GetSystemInfo(&gPerformanceData.SystemInfo);
 
-	GetSystemTimeAsFileTime((FILETIME*)&gPerformanceData.PreviousSystemTime);
+	LOGINFO("[%s] Number of CPUs: %d", __FUNCTION__, gPerformanceData.SystemInfo.dwNumberOfProcessors);
 
-	if (GameIsAlreadyRunning() == TRUE) // No extra instances of this program!!!
+	switch (gPerformanceData.SystemInfo.wProcessorArchitecture)
 	{
-		LOGWARN("[%s] Another instance of this program is already running!", __FUNCTION__);
+		case PROCESSOR_ARCHITECTURE_INTEL:
+		{
+			LOGINFO("[%s] CPU Architecture: x86", __FUNCTION__);
 
-		MessageBoxA(NULL, "Another instance of this program is already running!", "Error!", MB_ICONEXCLAMATION | MB_OK);
-		goto Exit;
+			break;
+		}
+		case PROCESSOR_ARCHITECTURE_IA64:
+		{
+			LOGINFO("[%s] CPU Architecture: Itanium (lol what?)", __FUNCTION__);
+
+			break;
+		}
+		case PROCESSOR_ARCHITECTURE_ARM64:
+		{
+			LOGINFO("[%s] CPU Architecture: ARM64", __FUNCTION__);
+
+			break;
+		}
+		case PROCESSOR_ARCHITECTURE_ARM:
+		{
+			LOGINFO("[%s] CPU Architecture: ARM", __FUNCTION__);
+
+			break;
+		}
+		case PROCESSOR_ARCHITECTURE_AMD64:
+		{
+			LOGINFO("[%s] CPU Architecture: x64", __FUNCTION__);
+
+			break;
+		}
+		default:
+		{
+			LOGINFO("[%s] CPU Architecture: Unknown", __FUNCTION__);
+
+			break;
+		}
 	}
+
+	GetSystemTimeAsFileTime((FILETIME*)&gPerformanceData.PreviousSystemTime);
 
 	if (timeBeginPeriod(1) == TIMERR_NOCANDO)
 	{
@@ -141,6 +194,12 @@ int __stdcall WinMain(_In_ HINSTANCE Instance, _In_opt_ HINSTANCE PreviousInstan
 		LOGERROR("[%s] Load32BppBitmapFromFile failed!", __FUNCTION__);
 
 		MessageBoxA(NULL, "Load32BppBitmapFromFile failed!", "Error!", MB_ICONEXCLAMATION | MB_OK);
+		goto Exit;
+	}
+
+	if (InitializeSoundEngine() != S_OK)
+	{
+		MessageBoxA(NULL, "InitializeSoundEngine failed!", "Error!", MB_ICONEXCLAMATION | MB_OK);
 		goto Exit;
 	}
 
@@ -191,7 +250,7 @@ int __stdcall WinMain(_In_ HINSTANCE Instance, _In_opt_ HINSTANCE PreviousInstan
 
 		RenderFrameGraphics();
 
-		
+
 		QueryPerformanceCounter((LARGE_INTEGER*)&FrameEnd);
 
 		ElapsedMicroseconds = FrameEnd - FrameStart;
@@ -229,10 +288,10 @@ int __stdcall WinMain(_In_ HINSTANCE Instance, _In_opt_ HINSTANCE PreviousInstan
 			FindFirstConnectedGamepad();
 
 			GetProcessTimes(ProcessHandle,
-				&ProcessCreationTime,
-				&ProcessExitTime,
-				(FILETIME*)&CurrentKernelCPUTime,
-				(FILETIME*)&CurrentUserCPUTime);
+							&ProcessCreationTime,
+							&ProcessExitTime,
+							(FILETIME*)&CurrentKernelCPUTime,
+							(FILETIME*)&CurrentUserCPUTime);
 
 			gPerformanceData.CPUPercent = (double)CurrentKernelCPUTime - (double)PreviousKernelCPUTime + \
 				((double)CurrentUserCPUTime - (double)PreviousUserCPUTime);
@@ -246,7 +305,7 @@ int __stdcall WinMain(_In_ HINSTANCE Instance, _In_opt_ HINSTANCE PreviousInstan
 			GetProcessHandleCount(ProcessHandle, &gPerformanceData.HandleCount);
 
 			K32GetProcessMemoryInfo(ProcessHandle, (PROCESS_MEMORY_COUNTERS*)&gPerformanceData.MemInfo, sizeof(gPerformanceData.MemInfo));
-			
+
 			gPerformanceData.RawFPSAverage = 1.0f / ((ElapsedMicrosecondsAccumulatorRaw / CALCULATE_AVG_FPS_EVERY_X_FRAMES) * 0.000001f);
 
 			gPerformanceData.CookedFPSAverage = 1.0f / ((ElapsedMicrosecondsAccumulatorCooked / CALCULATE_AVG_FPS_EVERY_X_FRAMES) * 0.000001f);
@@ -351,7 +410,7 @@ DWORD CreateMainGameWindow(void)
 	if (GetMonitorInfoA(MonitorFromWindow(gGameWindow, MONITOR_DEFAULTTOPRIMARY), &gPerformanceData.MonitorInfo) == 0)
 	{
 		Result = ERROR_MONITOR_NO_DESCRIPTOR;
-		
+
 		LOGERROR("[%s] GetMonitorInfoA(MonitorFromWindow()) failed! Error 0x%08lx", __FUNCTION__, Result);
 
 		goto Exit;
@@ -370,12 +429,12 @@ DWORD CreateMainGameWindow(void)
 	}
 
 	if (SetWindowPos(gGameWindow,
-		HWND_TOP,
-		gPerformanceData.MonitorInfo.rcMonitor.left,
-		gPerformanceData.MonitorInfo.rcMonitor.top,
-		gPerformanceData.MonitorWidth,
-		gPerformanceData.MonitorHeight,
-		SWP_NOOWNERZORDER | SWP_FRAMECHANGED) == 0)
+					 HWND_TOP,
+					 gPerformanceData.MonitorInfo.rcMonitor.left,
+					 gPerformanceData.MonitorInfo.rcMonitor.top,
+					 gPerformanceData.MonitorWidth,
+					 gPerformanceData.MonitorHeight,
+					 SWP_NOOWNERZORDER | SWP_FRAMECHANGED) == 0)
 	{
 		Result = GetLastError();
 
@@ -396,7 +455,7 @@ BOOL GameIsAlreadyRunning(void)
 	{
 		return TRUE;
 	}
-	else 
+	else
 	{
 		return FALSE;
 	}
@@ -404,9 +463,32 @@ BOOL GameIsAlreadyRunning(void)
 
 void ProcessHeroInput(void)
 {
-	if (gWindowHasFocus == FALSE)
+	gGameInput.EscapeKeyIsDown = GetAsyncKeyState(VK_ESCAPE);
+
+	gGameInput.DebugKeyIsDown = GetAsyncKeyState(VK_F1);
+
+	gGameInput.LeftKeyIsDown = GetAsyncKeyState(VK_LEFT) | GetAsyncKeyState('A');
+
+	gGameInput.RightKeyIsDown = GetAsyncKeyState(VK_RIGHT) | GetAsyncKeyState('D');
+
+	gGameInput.UpKeyIsDown = GetAsyncKeyState(VK_UP) | GetAsyncKeyState('W');
+
+	gGameInput.DownKeyIsDown = GetAsyncKeyState(VK_DOWN) | GetAsyncKeyState('S');
+
+	if (gGamepadID > -1)
 	{
-		goto Exit;
+		if (XInputGetState(gGamepadID, &gGamepadState) == ERROR_SUCCESS)
+		{
+			gGameInput.EscapeKeyIsDown |= gGamepadState.Gamepad.wButtons & XINPUT_GAMEPAD_BACK;
+
+			gGameInput.LeftKeyIsDown |= gGamepadState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT;
+
+			gGameInput.RightKeyIsDown |= gGamepadState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT;
+
+			gGameInput.UpKeyIsDown |= gGamepadState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP;
+
+			gGameInput.DownKeyIsDown |= gGamepadState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN;
+		}
 	}
 
 	switch (gGameState)
@@ -453,14 +535,21 @@ void ProcessHeroInput(void)
 		}
 	}
 
-Exit:
-	return;
+	gGameInput.DebugKeyWasDown = gGameInput.DebugKeyIsDown;
+
+	gGameInput.LeftKeyWasDown = gGameInput.LeftKeyIsDown;
+
+	gGameInput.RightKeyWasDown = gGameInput.RightKeyIsDown;
+
+	gGameInput.UpKeyWasDown = gGameInput.UpKeyIsDown;
+
+	gGameInput.DownKeyWasDown = gGameInput.DownKeyIsDown;
 }
 
 DWORD Load32BppBitmapFromFile(_In_ char* FileName, _Inout_ GAMEBITMAP* GameBitMap)
 {
 	DWORD Error = ERROR_SUCCESS;
-	
+
 	HANDLE FileHandle = INVALID_HANDLE_VALUE;
 
 	//WORD BitmapHeader = 0;
@@ -1293,7 +1382,7 @@ void BlitStringToBuffer(_In_ char* String, _In_ GAMEBITMAP* FontSheet, _In_ PIXE
 				FontSheetOffset = StartingFontSheetPixel + XPixel - (FontSheet->BitmapInfo.bmiHeader.biWidth * YPixel);
 
 				StringBitmapOffset = (Character * CharWidth) + ((StringBitmap.BitmapInfo.bmiHeader.biWidth * StringBitmap.BitmapInfo.bmiHeader.biHeight) - \
-					StringBitmap.BitmapInfo.bmiHeader.biWidth) + XPixel - (StringBitmap.BitmapInfo.bmiHeader.biWidth) * YPixel;
+																StringBitmap.BitmapInfo.bmiHeader.biWidth) + XPixel - (StringBitmap.BitmapInfo.bmiHeader.biWidth) * YPixel;
 
 				memcpy_s(&FontSheetPixel, sizeof(PIXEL32), (PIXEL32*)FontSheet->Memory + FontSheetOffset, sizeof(PIXEL32));
 
@@ -1362,32 +1451,32 @@ void RenderFrameGraphics(void)
 		}
 	}
 
-//#ifdef AVX
-//	__m256i OctoPixel = { 0x7f, 0x00, 0x00, 0xff, 0x7f, 0x00, 0x00, 0xff, 0x7f, 0x00, 0x00, 0xff, 0x7f, 0x00, 0x00, 0xff, \
-//						  0x7f, 0x00, 0x00, 0xff, 0x7f, 0x00, 0x00, 0xff, 0x7f, 0x00, 0x00, 0xff, 0x7f, 0x00, 0x00, 0xff };
-//
-//	ClearScreen(&OctoPixel);
-//#endif
-//
-//#ifdef SIMD
-//	__m128i QuadPixel = { 0x7f, 0x00, 0x00, 0xff, 0x7f, 0x00, 0x00, 0xff, 0x7f, 0x00, 0x00, 0xff, 0x7f, 0x00, 0x00, 0xff };
-//
-//	ClearScreen(&QuadPixel);
-//#endif 
-//
-//#ifndef ADVANCED_REGISTERS
-//	PIXEL32 Pixel = { 0x7f, 0x00, 0x00, 0xff };
-//
-//	ClearScreen(&Pixel);
-//#endif 
-//
-//	//PIXEL32 Green = { 0x00, 0xff, 0x00, 0xff };
-//
-//	// BlitStringToBuffer("GAME OVER", &g6x7Font, &Green, 60, 60);
-//
-//	Blit32BppBitmapToBuffer(&gPlayer.Sprite[gPlayer.CurrentArmor][gPlayer.Direction + gPlayer.SpriteIndex],
-//		gPlayer.ScreenPosX,
-//		gPlayer.ScreenPosY);
+	//#ifdef AVX
+	//	__m256i OctoPixel = { 0x7f, 0x00, 0x00, 0xff, 0x7f, 0x00, 0x00, 0xff, 0x7f, 0x00, 0x00, 0xff, 0x7f, 0x00, 0x00, 0xff, \
+	//						  0x7f, 0x00, 0x00, 0xff, 0x7f, 0x00, 0x00, 0xff, 0x7f, 0x00, 0x00, 0xff, 0x7f, 0x00, 0x00, 0xff };
+	//
+	//	ClearScreen(&OctoPixel);
+	//#endif
+	//
+	//#ifdef SSE2
+	//	__m128i QuadPixel = { 0x7f, 0x00, 0x00, 0xff, 0x7f, 0x00, 0x00, 0xff, 0x7f, 0x00, 0x00, 0xff, 0x7f, 0x00, 0x00, 0xff };
+	//
+	//	ClearScreen(&QuadPixel);
+	//#endif 
+	//
+	//#ifndef ADVANCED_REGISTERS
+	//	PIXEL32 Pixel = { 0x7f, 0x00, 0x00, 0xff };
+	//
+	//	ClearScreen(&Pixel);
+	//#endif 
+	//
+	//	//PIXEL32 Green = { 0x00, 0xff, 0x00, 0xff };
+	//
+	//	// BlitStringToBuffer("GAME OVER", &g6x7Font, &Green, 60, 60);
+	//
+	//	Blit32BppBitmapToBuffer(&gPlayer.Sprite[gPlayer.CurrentArmor][gPlayer.Direction + gPlayer.SpriteIndex],
+	//		gPlayer.ScreenPosX,
+	//		gPlayer.ScreenPosY);
 
 	if (gPerformanceData.DisplayDebugInfo == TRUE)
 	{
@@ -1397,18 +1486,18 @@ void RenderFrameGraphics(void)
 	HDC DeviceContext = GetDC(gGameWindow);
 
 	StretchDIBits(DeviceContext,
-		0,
-		0,
-		gPerformanceData.MonitorWidth,
-		gPerformanceData.MonitorHeight,
-		0,
-		0,
-		GAME_RES_WIDTH,
-		GAME_RES_HEIGHT,
-		gBackBuffer.Memory,
-		&gBackBuffer.BitmapInfo,
-		DIB_RGB_COLORS,
-		SRCCOPY);
+				  0,
+				  0,
+				  gPerformanceData.MonitorWidth,
+				  gPerformanceData.MonitorHeight,
+				  0,
+				  0,
+				  GAME_RES_WIDTH,
+				  GAME_RES_HEIGHT,
+				  gBackBuffer.Memory,
+				  &gBackBuffer.BitmapInfo,
+				  DIB_RGB_COLORS,
+				  SRCCOPY);
 
 	ReleaseDC(gGameWindow, DeviceContext);
 }
@@ -1421,11 +1510,11 @@ __forceinline void ClearScreen(_In_ __m256i* Color)
 		_mm256_store_si256((__m256i*)gBackBuffer.Memory + x, *Color);
 	}
 }
-#endif
 
-#ifdef SIMD
+#elif defined SSE2
+
 __forceinline void ClearScreen(_In_ __m128i* Color)
-{	
+{
 	for (int x = 0; x < (GAME_RES_WIDTH * GAME_RES_HEIGHT) / 4; x++)
 	{
 		_mm_store_si128((__m128i*)gBackBuffer.Memory + x, *Color);
@@ -1437,9 +1526,7 @@ __forceinline void ClearScreen(_In_ __m128i* Color)
 	}*/
 }
 
-#endif
-
-#ifndef ADVANCED_REGISTERS
+#else
 
 __forceinline void ClearScreen(_In_ PIXEL32* Pixel)
 {
@@ -1457,8 +1544,8 @@ void Blit32BppBitmapToBuffer(_In_ GAMEBITMAP* GameBitMap, _In_ uint16_t x, _In_ 
 	int32_t StartingScreenPixel = ((GAME_RES_WIDTH * GAME_RES_HEIGHT) - GAME_RES_WIDTH - (GAME_RES_WIDTH * y) + x);
 
 	int32_t StartingBitmapPixel = ((GameBitMap->BitmapInfo.bmiHeader.biWidth * GameBitMap->BitmapInfo.bmiHeader.biHeight) - \
-		GameBitMap->BitmapInfo.bmiHeader.biWidth);
-	
+								   GameBitMap->BitmapInfo.bmiHeader.biWidth);
+
 	int32_t MemoryOffset = 0;
 
 	int32_t BitmapOffset = 0;
@@ -1642,7 +1729,7 @@ void DrawTitleScreen(void)
 	static uint64_t LocalFrameCounter;
 
 	static uint64_t LastFrameSeen;
-	
+
 	// Sets the screen to black & removes ghosting
 	memset(gBackBuffer.Memory, 0, GAME_DRAWING_AREA_MEMORY_SIZE);
 
@@ -1650,18 +1737,18 @@ void DrawTitleScreen(void)
 
 	for (uint8_t MenuItem = 0; MenuItem < gMenu_TitleScreen.ItemCount; MenuItem++)
 	{
-		BlitStringToBuffer(gMenu_TitleScreen.Items[MenuItem]->Name, 
-			&g6x7Font, 
-			&White, 
-			gMenu_TitleScreen.Items[MenuItem]->x, 
-			gMenu_TitleScreen.Items[MenuItem]->y);
+		BlitStringToBuffer(gMenu_TitleScreen.Items[MenuItem]->Name,
+						   &g6x7Font,
+						   &White,
+						   gMenu_TitleScreen.Items[MenuItem]->x,
+						   gMenu_TitleScreen.Items[MenuItem]->y);
 	}
 
 	BlitStringToBuffer("»",
-		&g6x7Font,
-		&White, 
-		gMenu_TitleScreen.Items[gMenu_TitleScreen.SelectedItem]->x - 2 * FONT_CHAR_WIDTH,
-		gMenu_TitleScreen.Items[gMenu_TitleScreen.SelectedItem]->y);
+					   &g6x7Font,
+					   &White,
+					   gMenu_TitleScreen.Items[gMenu_TitleScreen.SelectedItem]->x - 2 * FONT_CHAR_WIDTH,
+					   gMenu_TitleScreen.Items[gMenu_TitleScreen.SelectedItem]->y);
 }
 
 void DrawOverworld(void)
@@ -1691,55 +1778,17 @@ void PPI_OpeningSplashScreen(void)
 
 void PPI_TitleScreen(void)
 {
-	int16_t EscapeKeyIsDown = GetAsyncKeyState(VK_ESCAPE);
-
-	int16_t DebugKeyIsDown = GetAsyncKeyState(VK_F1);
-
-	int16_t LeftKeyIsDown = GetAsyncKeyState(VK_LEFT) | GetAsyncKeyState('A');
-
-	int16_t RightKeyIsDown = GetAsyncKeyState(VK_RIGHT) | GetAsyncKeyState('D');
-
-	int16_t UpKeyIsDown = GetAsyncKeyState(VK_UP) | GetAsyncKeyState('W');
-
-	int16_t DownKeyIsDown = GetAsyncKeyState(VK_DOWN) | GetAsyncKeyState('S');
-
-	static int16_t DebugKeyWasDown = 0;
-
-	static int16_t LeftKeyWasDown = 0;
-
-	static int16_t RightKeyWasDown = 0;
-
-	static int16_t UpKeyWasDown = 0;
-
-	static int16_t DownKeyWasDown = 0;
-
-	if (gGamepadID > -1)
-	{
-		if (XInputGetState(gGamepadID, &gGamepadState) == ERROR_SUCCESS)
-		{
-			EscapeKeyIsDown |= gGamepadState.Gamepad.wButtons & XINPUT_GAMEPAD_BACK;
-
-			LeftKeyIsDown |= gGamepadState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT;
-
-			RightKeyIsDown |= gGamepadState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT;
-
-			UpKeyIsDown |= gGamepadState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP;
-
-			DownKeyIsDown |= gGamepadState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN;
-		}
-	}
-
-	if (EscapeKeyIsDown)
+	if (gGameInput.EscapeKeyIsDown)
 	{
 		SendMessageA(gGameWindow, WM_CLOSE, 0, 0);
 	}
 
-	if (DebugKeyIsDown && !DebugKeyWasDown)
+	if (gGameInput.DebugKeyIsDown && !gGameInput.DebugKeyWasDown)
 	{
 		gPerformanceData.DisplayDebugInfo = !gPerformanceData.DisplayDebugInfo;
 	}
 
-	if (DownKeyIsDown && !DownKeyWasDown)
+	if (gGameInput.DownKeyIsDown && !gGameInput.DownKeyWasDown)
 	{
 		if (gMenu_TitleScreen.SelectedItem < gMenu_TitleScreen.ItemCount - 1)
 		{
@@ -1747,79 +1796,30 @@ void PPI_TitleScreen(void)
 		}
 	}
 
-	if (UpKeyIsDown && !UpKeyWasDown)
+	if (gGameInput.UpKeyIsDown && !gGameInput.UpKeyWasDown)
 	{
 		if (gMenu_TitleScreen.SelectedItem > 0)
 		{
 			gMenu_TitleScreen.SelectedItem--;
 		}
 	}
-
-	DebugKeyWasDown = DebugKeyIsDown;
-
-	LeftKeyWasDown = LeftKeyIsDown;
-
-	RightKeyWasDown = RightKeyIsDown;
-
-	UpKeyWasDown = UpKeyIsDown;
-
-	DownKeyWasDown = DownKeyIsDown;
-
 }
 
 void PPI_Overworld(void)
 {
-	int16_t EscapeKeyIsDown = GetAsyncKeyState(VK_ESCAPE);
-
-	int16_t DebugKeyIsDown = GetAsyncKeyState(VK_F1);
-
-	int16_t LeftKeyIsDown = GetAsyncKeyState(VK_LEFT) | GetAsyncKeyState('A');
-
-	int16_t RightKeyIsDown = GetAsyncKeyState(VK_RIGHT) | GetAsyncKeyState('D');
-
-	int16_t UpKeyIsDown = GetAsyncKeyState(VK_UP) | GetAsyncKeyState('W');
-
-	int16_t DownKeyIsDown = GetAsyncKeyState(VK_DOWN) | GetAsyncKeyState('S');
-
-	static int16_t DebugKeyWasDown = 0;
-
-	static int16_t LeftKeyWasDown = 0;
-
-	static int16_t RightKeyWasDown = 0;
-
-	static int16_t UpKeyWasDown = 0;
-
-	static int16_t DownKeyWasDown = 0;
-
-	if (gGamepadID > -1)
-	{
-		if (XInputGetState(gGamepadID, &gGamepadState) == ERROR_SUCCESS)
-		{
-			EscapeKeyIsDown |= gGamepadState.Gamepad.wButtons & XINPUT_GAMEPAD_BACK;
-
-			LeftKeyIsDown |= gGamepadState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT;
-
-			RightKeyIsDown |= gGamepadState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT;
-
-			UpKeyIsDown |= gGamepadState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP;
-
-			DownKeyIsDown |= gGamepadState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN;
-		}
-	}
-
-	if (EscapeKeyIsDown)
+	if (gGameInput.EscapeKeyIsDown)
 	{
 		SendMessageA(gGameWindow, WM_CLOSE, 0, 0);
 	}
 
-	if (DebugKeyIsDown && !DebugKeyWasDown)
+	if (gGameInput.DebugKeyIsDown && !gGameInput.DebugKeyWasDown)
 	{
 		gPerformanceData.DisplayDebugInfo = !gPerformanceData.DisplayDebugInfo;
 	}
 
 	if (!gPlayer.MovementRemaining)
 	{
-		if (DownKeyIsDown)
+		if (gGameInput.DownKeyIsDown)
 		{
 			if (gPlayer.ScreenPosY < GAME_RES_HEIGHT - 16)
 			{
@@ -1828,7 +1828,7 @@ void PPI_Overworld(void)
 				gPlayer.Direction = DOWN;
 			}
 		}
-		else if (LeftKeyIsDown)
+		else if (gGameInput.LeftKeyIsDown)
 		{
 			if (gPlayer.ScreenPosX > 0)
 			{
@@ -1837,7 +1837,7 @@ void PPI_Overworld(void)
 				gPlayer.Direction = LEFT;
 			}
 		}
-		else if (RightKeyIsDown)
+		else if (gGameInput.RightKeyIsDown)
 		{
 			if (gPlayer.ScreenPosX < GAME_RES_WIDTH - 16)
 			{
@@ -1846,7 +1846,7 @@ void PPI_Overworld(void)
 				gPlayer.Direction = RIGHT;
 			}
 		}
-		else if (UpKeyIsDown)
+		else if (gGameInput.UpKeyIsDown)
 		{
 			if (gPlayer.ScreenPosY > 0)
 			{
@@ -1909,24 +1909,12 @@ void PPI_Overworld(void)
 
 				break;
 			}
-
 			default:
 			{
-				// assert
+
 			}
 		}
 	}
-
-	DebugKeyWasDown = DebugKeyIsDown;
-
-	LeftKeyWasDown = LeftKeyIsDown;
-
-	RightKeyWasDown = RightKeyIsDown;
-
-	UpKeyWasDown = UpKeyIsDown;
-
-	DownKeyWasDown = DownKeyIsDown;
-
 }
 
 void PPI_Battle(void)
@@ -1942,4 +1930,84 @@ void PPI_OptionScreen(void)
 void PPI_ExitYesNoScreen(void)
 {
 
+}
+
+HRESULT InitializeSoundEngine(void)
+{
+	HRESULT Result = S_OK;
+
+	WAVEFORMATEX SfxWaveFormat = { 0 };
+
+	WAVEFORMATEX MusicWaveFormat = { 0 };
+
+	Result = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+
+	if (Result != S_OK)
+	{
+		LOGERROR("[%s] CoInitializeEx failed with 0x%08lx!", __FUNCTION__, Result);
+
+		goto Exit;
+	}
+
+	Result = XAudio2Create(&gXAudio, 0, XAUDIO2_ANY_PROCESSOR); // allows for music to play on separate thread
+
+	if (FAILED(Result))
+	{
+		LOGERROR("[%s] XAudio2Create failed with 0x%08lx!", __FUNCTION__, Result);
+
+		goto Exit;
+	}
+
+	Result = gXAudio->lpVtbl->CreateMasteringVoice(gXAudio, &gXAudioMasteringVoice, XAUDIO2_DEFAULT_CHANNELS, XAUDIO2_DEFAULT_SAMPLERATE, 0, 0, NULL, 0);
+
+	if (FAILED(Result))
+	{
+		LOGERROR("[%s] CreateMasteringVoice failed with 0x%08lx!", __FUNCTION__, Result);
+
+		goto Exit;
+	}
+
+	SfxWaveFormat.wFormatTag = WAVE_FORMAT_PCM;
+	SfxWaveFormat.nChannels = 1; // Mono
+	SfxWaveFormat.nSamplesPerSec = 44100;
+	SfxWaveFormat.nAvgBytesPerSec = SfxWaveFormat.nSamplesPerSec * SfxWaveFormat.nChannels * 2;
+	SfxWaveFormat.nBlockAlign = SfxWaveFormat.nChannels * 2;
+	SfxWaveFormat.wBitsPerSample = 16;
+	SfxWaveFormat.cbSize = 0x6164;
+
+	for (uint8_t Counter = 0; Counter < NUMBER_OF_SFX_SOURCE_VOICES; Counter++)
+	{
+		Result = gXAudio->lpVtbl->CreateSourceVoice(gXAudio, &gXAudioSFXSourceVoice[Counter], &SfxWaveFormat, 0, XAUDIO2_DEFAULT_FREQ_RATIO, NULL, NULL, NULL);
+
+		if (Result != S_OK)
+		{
+			LOGERROR("[%s] CreateSourceVoice failed with 0x%08lx!", __FUNCTION__, Result);
+
+			goto Exit;
+		}
+
+		gXAudioSFXSourceVoice[Counter]->lpVtbl->SetVolume(gXAudioSFXSourceVoice[Counter], gSFXVolume, XAUDIO2_COMMIT_NOW);
+	}
+
+	MusicWaveFormat.wFormatTag = WAVE_FORMAT_PCM;
+	MusicWaveFormat.nChannels = 2; // Stereo
+	MusicWaveFormat.nSamplesPerSec = 44100;
+	MusicWaveFormat.nAvgBytesPerSec = MusicWaveFormat.nSamplesPerSec * MusicWaveFormat.nChannels * 2;
+	MusicWaveFormat.nBlockAlign = MusicWaveFormat.nChannels * 2;
+	MusicWaveFormat.wBitsPerSample = 16;
+	MusicWaveFormat.cbSize = 0x6164;
+
+	Result = gXAudio->lpVtbl->CreateSourceVoice(gXAudio, &gXAudioMusicSouceVoice, &MusicWaveFormat, 0, XAUDIO2_DEFAULT_FREQ_RATIO, NULL, NULL, NULL);
+
+	if (Result != S_OK)
+	{
+		LOGERROR("[%s] CreateSourceVoice failed with 0x%08lx!", __FUNCTION__, Result);
+
+		goto Exit;
+	}
+
+	gXAudioMusicSouceVoice->lpVtbl->SetVolume(gXAudioMusicSouceVoice, gMusicVolume, XAUDIO2_COMMIT_NOW);
+
+Exit:
+	return Result;
 }

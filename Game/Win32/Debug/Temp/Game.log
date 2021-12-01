@@ -1,0 +1,23 @@
+﻿  Logging.c
+  Main.c
+C:\Users\lcrod\Documents\C\Game\Game\Main.c(1660,56): warning C4777: 'sprintf_s' : format string '%zu' requires an argument of type 'unsigned int', but variadic argument 1 has type 'SIZE_T'
+C:\Users\lcrod\Documents\C\Game\Game\Main.c(1660,56): message : consider using '%lu' in the format string
+  Running Code Analysis for C/C++...
+  Generating Code...
+  Game.vcxproj -> C:\Users\lcrod\Documents\C\Game\Game\Win32\Debug\Game.exe
+  C:\Users\lcrod\Documents\C\Game\Game\Assets\6x7Font.bmpx
+  C:\Users\lcrod\Documents\C\Game\Game\Assets\Chara-Main.png
+  C:\Users\lcrod\Documents\C\Game\Game\Assets\Hero_Suit0_Down_Standing.bmpx
+  C:\Users\lcrod\Documents\C\Game\Game\Assets\Hero_Suit0_Down_Walk1.bmpx
+  C:\Users\lcrod\Documents\C\Game\Game\Assets\Hero_Suit0_Down_Walk2.bmpx
+  C:\Users\lcrod\Documents\C\Game\Game\Assets\Hero_Suit0_Left_Standing.bmpx
+  C:\Users\lcrod\Documents\C\Game\Game\Assets\Hero_Suit0_Left_Walk1.bmpx
+  C:\Users\lcrod\Documents\C\Game\Game\Assets\Hero_Suit0_Left_Walk2.bmpx
+  C:\Users\lcrod\Documents\C\Game\Game\Assets\Hero_Suit0_Right_Standing.bmpx
+  C:\Users\lcrod\Documents\C\Game\Game\Assets\Hero_Suit0_Right_Walk1.bmpx
+  C:\Users\lcrod\Documents\C\Game\Game\Assets\Hero_Suit0_Right_Walk2.bmpx
+  C:\Users\lcrod\Documents\C\Game\Game\Assets\Hero_Suit0_Up_Standing.bmpx
+  C:\Users\lcrod\Documents\C\Game\Game\Assets\Hero_Suit0_Up_Walk1.bmpx
+  C:\Users\lcrod\Documents\C\Game\Game\Assets\Hero_Suit0_Up_Walk2.bmpx
+  C:\Users\lcrod\Documents\C\Game\Game\Assets\WIP_Chara-Main.png
+  15 File(s) copied
