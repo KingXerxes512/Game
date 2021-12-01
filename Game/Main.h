@@ -220,9 +220,26 @@ void DrawOpeningSplashScreen(void);
 
 void DrawTitleScreen(void);
 
+void DrawOpeningSplashScreen(void);
+
+void DrawTitleScreen(void);
+
+void DrawOverworld(void);
+
+void DrawBattle(void);
+
+void DrawOptionScreen(void);
+
+void DrawExitYesNoScreen(void);
+
 void PPI_OpeningSplashScreen(void);
 
 void PPI_TitleScreen(void);
 
 void PPI_Overworld(void);
 
+void PPI_Battle(void);
+
+void PPI_OptionScreen(void);
+
+void PPI_ExitYesNoScreen(void);

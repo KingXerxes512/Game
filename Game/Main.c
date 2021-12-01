@@ -409,8 +409,6 @@ void ProcessHeroInput(void)
 		goto Exit;
 	}
 
-	
-
 	switch (gGameState)
 	{
 		case GAMESTATE_OPENINGSPLASHSCREEN:
@@ -428,6 +426,24 @@ void ProcessHeroInput(void)
 		case GAMESTATE_OVERWORLD:
 		{
 			PPI_Overworld();
+
+			break;
+		}
+		case GAMESTATE_BATTLE:
+		{
+			PPI_Battle();
+
+			break;
+		}
+		case GAMESTATE_OPTIONSSCREEN:
+		{
+			PPI_OptionScreen();
+
+			break;
+		}
+		case GAMESTATE_EXITYESNOSCREEN:
+		{
+			PPI_ExitYesNoScreen();
 
 			break;
 		}
@@ -1316,6 +1332,30 @@ void RenderFrameGraphics(void)
 
 			break;
 		}
+		case GAMESTATE_OVERWORLD:
+		{
+			DrawOverworld();
+
+			break;
+		}
+		case GAMESTATE_BATTLE:
+		{
+			DrawBattle();
+
+			break;
+		}
+		case GAMESTATE_OPTIONSSCREEN:
+		{
+			DrawOptionScreen();
+
+			break;
+		}
+		case GAMESTATE_EXITYESNOSCREEN:
+		{
+			DrawExitYesNoScreen();
+
+			break;
+		}
 		default:
 		{
 			ASSERT(FALSE, "Gamestate not implemented!");
@@ -1374,10 +1414,9 @@ void RenderFrameGraphics(void)
 }
 
 #ifdef AVX
-
 __forceinline void ClearScreen(_In_ __m256i* Color)
 {
-	for (int x = 0; x < (GAME_RES_WIDTH * GAME_RES_HEIGHT) / 8; x++)
+	for (int x = 0; x < (GAME_RES_WIDTH * GAME_RES_HEIGHT) / 8 /* 8 PIXEL32s inside 256 bits */; x++)
 	{
 		_mm256_store_si256((__m256i*)gBackBuffer.Memory + x, *Color);
 	}
@@ -1604,10 +1643,10 @@ void DrawTitleScreen(void)
 
 	static uint64_t LastFrameSeen;
 	
-	// Sets the screen to black
+	// Sets the screen to black & removes ghosting
 	memset(gBackBuffer.Memory, 0, GAME_DRAWING_AREA_MEMORY_SIZE);
 
-	BlitStringToBuffer(GAME_NAME, &g6x7Font, &White, (GAME_RES_WIDTH / 2) - (strlen(GAME_NAME) * FONT_CHAR_WIDTH / 2), 60);
+	BlitStringToBuffer(GAME_NAME, &g6x7Font, &White, (GAME_RES_WIDTH / 2) - ((uint16_t)strlen(GAME_NAME) * FONT_CHAR_WIDTH / 2), 60);
 
 	for (uint8_t MenuItem = 0; MenuItem < gMenu_TitleScreen.ItemCount; MenuItem++)
 	{
@@ -1623,6 +1662,26 @@ void DrawTitleScreen(void)
 		&White, 
 		gMenu_TitleScreen.Items[gMenu_TitleScreen.SelectedItem]->x - 2 * FONT_CHAR_WIDTH,
 		gMenu_TitleScreen.Items[gMenu_TitleScreen.SelectedItem]->y);
+}
+
+void DrawOverworld(void)
+{
+
+}
+
+void DrawBattle(void)
+{
+
+}
+
+void DrawOptionScreen(void)
+{
+
+}
+
+void DrawExitYesNoScreen(void)
+{
+
 }
 
 void PPI_OpeningSplashScreen(void)
@@ -1870,3 +1929,17 @@ void PPI_Overworld(void)
 
 }
 
+void PPI_Battle(void)
+{
+
+}
+
+void PPI_OptionScreen(void)
+{
+
+}
+
+void PPI_ExitYesNoScreen(void)
+{
+
+}
