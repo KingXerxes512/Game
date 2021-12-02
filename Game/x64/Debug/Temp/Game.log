@@ -1,4 +1,5 @@
 ﻿  Main.c
+C:\Users\lcrod\Documents\C\Game\Game\Main.c(2179,55): warning C4090: 'function': different 'const' qualifiers
   Game.vcxproj -> C:\Users\lcrod\Documents\C\Game\Game\x64\Debug\Game.exe
   C:\Users\lcrod\Documents\C\Game\Game\Assets\6x7Font.bmpx
   C:\Users\lcrod\Documents\C\Game\Game\Assets\Assets_MenuSelect.wav

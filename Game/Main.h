@@ -109,16 +109,24 @@ typedef LONG(NTAPI* _NtQueryTimerResolution) (OUT PULONG MinimumResolution, OUT 
 
 _NtQueryTimerResolution NtQueryTimerResolution;
 
-typedef struct GAMEBITMAP {
-
+typedef struct GAMEBITMAP 
+{
 	BITMAPINFO BitmapInfo;
 
 	void* Memory;
 
 } GAMEBITMAP;
 
-typedef struct PIXEL32 {
+typedef struct GAMESOUND 
+{
+	WAVEFORMATEX WaveFormat;
 
+	XAUDIO2_BUFFER Buffer;
+
+} GAMESOUND;
+
+typedef struct PIXEL32 
+{
 	uint8_t Blue;
 
 	uint8_t Green;
@@ -129,8 +137,8 @@ typedef struct PIXEL32 {
 
 } PIXEL32;
 
-typedef struct GAMEPERFDATA {
-
+typedef struct GAMEPERFDATA 
+{
 	uint64_t TotalFramesRendered;
 
 	float RawFPSAverage;
@@ -167,8 +175,8 @@ typedef struct GAMEPERFDATA {
 
 } GAMEPERFDATA;
 
-typedef struct HERO {
-
+typedef struct HERO 
+{
 	char Name[12];
 
 	GAMEBITMAP Sprite[3][12];
@@ -218,6 +226,10 @@ void DrawDebugInfo(void);
 void FindFirstConnectedGamepad(void);
 
 HRESULT InitializeSoundEngine(void);
+
+DWORD LoadWavFromFile(_In_ char* FileName, _Inout_ GAMESOUND* GameSound);
+
+void PlayGameSound(_In_ GAMESOUND* GameSound);
 
 #ifdef AVX
 
