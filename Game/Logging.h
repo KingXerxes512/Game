@@ -14,7 +14,7 @@
 
 #endif
 
-#define GAME_NAME "Game_B"
+#define GAME_NAME "Game"
 
 #define LOG_FILE_NAME GAME_NAME ".log"
 

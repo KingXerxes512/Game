@@ -39,7 +39,8 @@
 
 // Globals
 HWND gGameWindow;
-BOOL gGameIsRunning;
+BOOL gGameIsRunning; // Set this to FALSE to exit the game immediately. This controls the main game loop in WinMain
+BOOL gGameIsInProgress; // Whether the player has started or loaded a game
 GAMEBITMAP gBackBuffer;
 GAMEBITMAP g6x7Font;
 GAMEPERFDATA gPerformanceData;
@@ -47,7 +48,9 @@ HERO gPlayer;
 BOOL gWindowHasFocus;
 XINPUT_STATE gGamepadState;
 int8_t gGamepadID = -1;
-GAMESTATE gGameState = GAMESTATE_TITLESCREEN;
+GAMESTATE gCurrentGameState = GAMESTATE_TITLESCREEN;
+GAMESTATE gPreviousGameState;
+GAMESTATE gDesiredGameState;
 GAMEINPUT gGameInput;
 IXAudio2* gXAudio;
 IXAudio2MasteringVoice* gXAudioMasteringVoice;
@@ -57,6 +60,7 @@ uint8_t gSFXSourceVoiceSelector;
 float gSFXVolume = 0.5f;
 float gMusicVolume = 0.5f;
 GAMESOUND gMenuNavigate;
+GAMESOUND gMenuChoose;
 
 int __stdcall WinMain(_In_ HINSTANCE Instance, _In_opt_ HINSTANCE PreviousInstance, _In_ PSTR CommandLine, _In_ INT CmdShow)
 {
@@ -205,6 +209,12 @@ int __stdcall WinMain(_In_ HINSTANCE Instance, _In_opt_ HINSTANCE PreviousInstan
 	}
 
 	if (LoadWavFromFile(".\\Assets\\Assets_MenuSelect.wav", &gMenuNavigate) != ERROR_SUCCESS)
+	{
+		MessageBoxA(NULL, "LoadWavFromFile failed!", "Error!", MB_ICONEXCLAMATION | MB_OK);
+		goto Exit;
+	}
+
+	if (LoadWavFromFile(".\\Assets\\Assets_MenuChoose.wav", &gMenuChoose) != ERROR_SUCCESS)
 	{
 		MessageBoxA(NULL, "LoadWavFromFile failed!", "Error!", MB_ICONEXCLAMATION | MB_OK);
 		goto Exit;
@@ -400,7 +410,7 @@ DWORD CreateMainGameWindow(void)
 	}
 
 	// Window Handle
-	gGameWindow = CreateWindowExA(0, GAME_NAME "_WINDOWCLASS", "Window Title", WS_OVERLAPPEDWINDOW | WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, 640, 480, NULL, NULL, WindowClass.hInstance, NULL);
+	gGameWindow = CreateWindowExA(0, GAME_NAME "_WINDOWCLASS", GAME_NAME, WS_OVERLAPPEDWINDOW | WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, 640, 480, NULL, NULL, WindowClass.hInstance, NULL);
 
 	if (gGameWindow == NULL)
 	{
@@ -482,6 +492,8 @@ void ProcessHeroInput(void)
 
 	gGameInput.DownKeyIsDown = GetAsyncKeyState(VK_DOWN) | GetAsyncKeyState('S');
 
+	gGameInput.ChooseKeyIsDown = GetAsyncKeyState(VK_RETURN);
+
 	if (gGamepadID > -1)
 	{
 		if (XInputGetState(gGamepadID, &gGamepadState) == ERROR_SUCCESS)
@@ -495,10 +507,12 @@ void ProcessHeroInput(void)
 			gGameInput.UpKeyIsDown |= gGamepadState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP;
 
 			gGameInput.DownKeyIsDown |= gGamepadState.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN;
+
+			gGameInput.ChooseKeyIsDown |= gGamepadState.Gamepad.wButtons & XINPUT_GAMEPAD_A;
 		}
 	}
 
-	switch (gGameState)
+	switch (gCurrentGameState)
 	{
 		case GAMESTATE_OPENINGSPLASHSCREEN:
 		{
@@ -551,6 +565,8 @@ void ProcessHeroInput(void)
 	gGameInput.UpKeyWasDown = gGameInput.UpKeyIsDown;
 
 	gGameInput.DownKeyWasDown = gGameInput.DownKeyIsDown;
+
+	gGameInput.ChooseKeyWasDown = gGameInput.ChooseKeyIsDown;
 }
 
 DWORD Load32BppBitmapFromFile(_In_ char* FileName, _Inout_ GAMEBITMAP* GameBitMap)
@@ -1414,7 +1430,7 @@ void BlitStringToBuffer(_In_ char* String, _In_ GAMEBITMAP* FontSheet, _In_ PIXE
 
 void RenderFrameGraphics(void)
 {
-	switch (gGameState)
+	switch (gCurrentGameState)
 	{
 		case GAMESTATE_OPENINGSPLASHSCREEN:
 		{
@@ -1721,7 +1737,21 @@ void MenuItem_TitleScreen_Options(void)
 
 void MenuItem_TitleScreen_Exit(void)
 {
+	gPreviousGameState = gCurrentGameState;
 
+	gCurrentGameState = GAMESTATE_EXITYESNOSCREEN;
+}
+
+void MenuItem_ExitYesNo_Yes(void)
+{
+	SendMessageA(gGameWindow, WM_CLOSE, 0, 0);
+}
+
+void MenuItem_ExitYesNo_No(void)
+{
+	gCurrentGameState = gPreviousGameState;
+
+	gPreviousGameState = GAMESTATE_EXITYESNOSCREEN;
 }
 
 void DrawOpeningSplashScreen(void)
@@ -1744,11 +1774,25 @@ void DrawTitleScreen(void)
 
 	for (uint8_t MenuItem = 0; MenuItem < gMenu_TitleScreen.ItemCount; MenuItem++)
 	{
-		BlitStringToBuffer(gMenu_TitleScreen.Items[MenuItem]->Name,
-						   &g6x7Font,
-						   &White,
-						   gMenu_TitleScreen.Items[MenuItem]->x,
-						   gMenu_TitleScreen.Items[MenuItem]->y);
+		if (_stricmp(gMenu_TitleScreen.Items[MenuItem]->Name, "Resume") == 0)
+		{
+			if (gGameIsInProgress)
+			{
+				BlitStringToBuffer(gMenu_TitleScreen.Items[MenuItem]->Name,
+								   &g6x7Font,
+								   &White,
+								   gMenu_TitleScreen.Items[MenuItem]->x,
+								   gMenu_TitleScreen.Items[MenuItem]->y);
+			}
+		}
+		else
+		{
+			BlitStringToBuffer(gMenu_TitleScreen.Items[MenuItem]->Name,
+							   &g6x7Font,
+							   &White,
+							   gMenu_TitleScreen.Items[MenuItem]->x,
+							   gMenu_TitleScreen.Items[MenuItem]->y);
+		}
 	}
 
 	BlitStringToBuffer("»",
@@ -1775,7 +1819,38 @@ void DrawOptionScreen(void)
 
 void DrawExitYesNoScreen(void)
 {
+	PIXEL32 White = { 0xff, 0xff, 0xff, 0xff };
 
+	static uint64_t LocalFrameCounter;
+
+	static uint64_t LastFrameSeen;
+
+	// Sets the screen to black & removes ghosting
+	memset(gBackBuffer.Memory, 0, GAME_DRAWING_AREA_MEMORY_SIZE);
+
+	BlitStringToBuffer(gMenu_ExitYesNo.Name,
+					   &g6x7Font,
+					   &White,
+					   (GAME_RES_WIDTH / 2) - ((uint16_t)strlen(gMenu_ExitYesNo.Name) * FONT_CHAR_WIDTH / 2),
+					   60);
+
+	BlitStringToBuffer(gMenu_ExitYesNo.Items[0]->Name,
+					   &g6x7Font,
+					   &White,
+					   gMenu_ExitYesNo.Items[0]->x,
+					   gMenu_ExitYesNo.Items[0]->y);
+
+	BlitStringToBuffer(gMenu_ExitYesNo.Items[1]->Name,
+					   &g6x7Font,
+					   &White,
+					   gMenu_ExitYesNo.Items[1]->x,
+					   gMenu_ExitYesNo.Items[1]->y);
+
+	BlitStringToBuffer("»",
+					   &g6x7Font,
+					   &White,
+					   gMenu_ExitYesNo.Items[gMenu_ExitYesNo.SelectedItem]->x - 2 * FONT_CHAR_WIDTH,
+					   gMenu_ExitYesNo.Items[gMenu_ExitYesNo.SelectedItem]->y);
 }
 
 void PPI_OpeningSplashScreen(void)
@@ -1785,10 +1860,10 @@ void PPI_OpeningSplashScreen(void)
 
 void PPI_TitleScreen(void)
 {
-	if (gGameInput.EscapeKeyIsDown)
+	/*if (gGameInput.EscapeKeyIsDown)
 	{
 		SendMessageA(gGameWindow, WM_CLOSE, 0, 0);
-	}
+	}*/
 
 	if (gGameInput.DebugKeyIsDown && !gGameInput.DebugKeyWasDown)
 	{
@@ -1806,11 +1881,28 @@ void PPI_TitleScreen(void)
 
 	if (gGameInput.UpKeyIsDown && !gGameInput.UpKeyWasDown)
 	{
-		if (gMenu_TitleScreen.SelectedItem > 0)
+		if (gGameIsInProgress)
 		{
-			gMenu_TitleScreen.SelectedItem--;
-			PlayGameSound(&gMenuNavigate);
+			if (gMenu_TitleScreen.SelectedItem > 0)
+			{
+				gMenu_TitleScreen.SelectedItem--;
+				PlayGameSound(&gMenuNavigate);
+			}
 		}
+		else // If game is not in progress, then doesn't allow for the resume button to be selected
+		{
+			if (gMenu_TitleScreen.SelectedItem > 1)
+			{
+				gMenu_TitleScreen.SelectedItem--;
+				PlayGameSound(&gMenuNavigate);
+			}
+		}
+	}
+
+	if (gGameInput.ChooseKeyIsDown && !gGameInput.ChooseKeyWasDown)
+	{
+		gMenu_TitleScreen.Items[gMenu_TitleScreen.SelectedItem]->Action();
+		PlayGameSound(&gMenuChoose);
 	}
 }
 
@@ -1938,7 +2030,34 @@ void PPI_OptionScreen(void)
 
 void PPI_ExitYesNoScreen(void)
 {
+	if (gGameInput.DebugKeyIsDown && !gGameInput.DebugKeyWasDown)
+	{
+		gPerformanceData.DisplayDebugInfo = !gPerformanceData.DisplayDebugInfo;
+	}
 
+	if (gGameInput.DownKeyIsDown && !gGameInput.DownKeyWasDown)
+	{
+		if (gMenu_ExitYesNo.SelectedItem < gMenu_ExitYesNo.ItemCount - 1)
+		{
+			gMenu_ExitYesNo.SelectedItem++;
+			PlayGameSound(&gMenuNavigate);
+		}
+	}
+
+	if (gGameInput.UpKeyIsDown && !gGameInput.UpKeyWasDown)
+	{
+		if (gMenu_ExitYesNo.SelectedItem > 0)
+		{
+			gMenu_ExitYesNo.SelectedItem--;
+			PlayGameSound(&gMenuNavigate);
+		}
+	}
+
+	if (gGameInput.ChooseKeyIsDown && !gGameInput.ChooseKeyWasDown)
+	{
+		gMenu_ExitYesNo.Items[gMenu_ExitYesNo.SelectedItem]->Action();
+		PlayGameSound(&gMenuChoose);
+	}
 }
 
 HRESULT InitializeSoundEngine(void)
@@ -2039,6 +2158,8 @@ DWORD LoadWavFromFile(_In_ char* FileName, _Inout_ GAMESOUND* GameSound)
 
 	HANDLE FileHandle = INVALID_HANDLE_VALUE;
 
+	void* AudioData = NULL;
+
 	if ((FileHandle = CreateFileA(FileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL)) == INVALID_HANDLE_VALUE)
 	{
 		Error = GetLastError();
@@ -2085,7 +2206,7 @@ DWORD LoadWavFromFile(_In_ char* FileName, _Inout_ GAMESOUND* GameSound)
 	}
 
 	if (GameSound->WaveFormat.nBlockAlign != (GameSound->WaveFormat.nChannels * GameSound->WaveFormat.wBitsPerSample / 8) ||
-		GameSound->WaveFormat.wFormatTag != WAVE_FORMAT_PCM || 
+		GameSound->WaveFormat.wFormatTag != WAVE_FORMAT_PCM ||
 		GameSound->WaveFormat.wBitsPerSample != 16)
 	{
 		Error = ERROR_DATATYPE_MISMATCH;
@@ -2152,9 +2273,9 @@ DWORD LoadWavFromFile(_In_ char* FileName, _Inout_ GAMESOUND* GameSound)
 		goto Exit;
 	}
 
-	GameSound->Buffer.pAudioData = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, DataChunkSize);
+	AudioData = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, DataChunkSize);
 
-	if (GameSound->Buffer.pAudioData == NULL)
+	if (AudioData == NULL)
 	{
 		Error = ERROR_NOT_ENOUGH_MEMORY;
 
@@ -2176,7 +2297,7 @@ DWORD LoadWavFromFile(_In_ char* FileName, _Inout_ GAMESOUND* GameSound)
 		goto Exit;
 	}
 
-	if (ReadFile(FileHandle, GameSound->Buffer.pAudioData, DataChunkSize, &NumberOfBytesRead, NULL) == 0)
+	if (ReadFile(FileHandle, AudioData, DataChunkSize, &NumberOfBytesRead, NULL) == 0)
 	{
 		Error = GetLastError();
 
@@ -2184,6 +2305,8 @@ DWORD LoadWavFromFile(_In_ char* FileName, _Inout_ GAMESOUND* GameSound)
 
 		goto Exit;
 	}
+
+	GameSound->Buffer.pAudioData = AudioData;
 
 Exit:
 	if (Error == ERROR_SUCCESS)

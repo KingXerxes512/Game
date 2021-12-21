@@ -86,6 +86,8 @@ typedef struct GAMEINPUT
 
 	int16_t DownKeyIsDown;
 
+	int16_t ChooseKeyIsDown;
+
 	int16_t DebugKeyWasDown;
 
 	int16_t LeftKeyWasDown;
@@ -95,6 +97,8 @@ typedef struct GAMEINPUT
 	int16_t UpKeyWasDown;
 
 	int16_t DownKeyWasDown;
+
+	int16_t ChooseKeyWasDown;
 } GAMEINPUT;
 
 #define FONT_SHEET_CHARACTERS_PER_ROW 98

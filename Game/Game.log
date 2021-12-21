@@ -1,0 +1,20 @@
+
+[12/20/2021 18:48:18.916][INFO] [LoadRegistryParameters] Log Level is 4.
+[12/20/2021 18:48:18.920][INFO] [WinMain] Game_B is starting.
+[12/20/2021 18:48:18.923][INFO] [WinMain] Number of CPUs: 24
+[12/20/2021 18:48:18.925][INFO] [WinMain] CPU Architecture: x64
+[12/20/2021 18:48:18.946][INFO] [Load32BppBitmapFromFile] Loading successful: .\Assets\6x7Font.bmpx
+[12/20/2021 18:48:18.988][INFO] [LoadWavFromFile] Successfully loaded .\Assets\Assets_MenuSelect.wav!
+[12/20/2021 18:48:18.988][INFO] [LoadWavFromFile] Successfully loaded .\Assets\Assets_MenuChoose.wav!
+[12/20/2021 18:48:18.989][INFO] [Load32BppBitmapFromFile] Loading successful: .\Assets\Hero_Suit0_Down_Standing.bmpx
+[12/20/2021 18:48:18.989][INFO] [Load32BppBitmapFromFile] Loading successful: .\Assets\Hero_Suit0_Down_Walk1.bmpx
+[12/20/2021 18:48:18.990][INFO] [Load32BppBitmapFromFile] Loading successful: .\Assets\Hero_Suit0_Down_Walk2.bmpx
+[12/20/2021 18:48:18.990][INFO] [Load32BppBitmapFromFile] Loading successful: .\Assets\Hero_Suit0_Left_Standing.bmpx
+[12/20/2021 18:48:18.991][INFO] [Load32BppBitmapFromFile] Loading successful: .\Assets\Hero_Suit0_Left_Walk1.bmpx
+[12/20/2021 18:48:18.991][INFO] [Load32BppBitmapFromFile] Loading successful: .\Assets\Hero_Suit0_Left_Walk2.bmpx
+[12/20/2021 18:48:18.991][INFO] [Load32BppBitmapFromFile] Loading successful: .\Assets\Hero_Suit0_Right_Standing.bmpx
+[12/20/2021 18:48:18.992][INFO] [Load32BppBitmapFromFile] Loading successful: .\Assets\Hero_Suit0_Right_Walk1.bmpx
+[12/20/2021 18:48:18.992][INFO] [Load32BppBitmapFromFile] Loading successful: .\Assets\Hero_Suit0_Right_Walk2.bmpx
+[12/20/2021 18:48:18.993][INFO] [Load32BppBitmapFromFile] Loading successful: .\Assets\Hero_Suit0_Up_Standing.bmpx
+[12/20/2021 18:48:18.993][INFO] [Load32BppBitmapFromFile] Loading successful: .\Assets\Hero_Suit0_Up_Walk1.bmpx
+[12/20/2021 18:48:18.993][INFO] [Load32BppBitmapFromFile] Loading successful: .\Assets\Hero_Suit0_Up_Walk2.bmpx
