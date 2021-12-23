@@ -69,12 +69,16 @@ typedef enum GAMESTATE
 
 	GAMESTATE_OPTIONSSCREEN,
 
-	GAMESTATE_EXITYESNOSCREEN
+	GAMESTATE_EXITYESNOSCREEN,
+
+	GAMESTATE_GAMEPADUNPLUGGED
 } GAMESTATE;
 
 typedef struct GAMEINPUT
 {
 	int16_t EscapeKeyIsDown;
+
+	int16_t EscapeKeyWasDown;
 
 	int16_t DebugKeyIsDown;
 
@@ -113,7 +117,7 @@ typedef LONG(NTAPI* _NtQueryTimerResolution) (OUT PULONG MinimumResolution, OUT 
 
 _NtQueryTimerResolution NtQueryTimerResolution;
 
-typedef struct GAMEBITMAP 
+typedef struct GAMEBITMAP
 {
 	BITMAPINFO BitmapInfo;
 
@@ -121,7 +125,7 @@ typedef struct GAMEBITMAP
 
 } GAMEBITMAP;
 
-typedef struct GAMESOUND 
+typedef struct GAMESOUND
 {
 	WAVEFORMATEX WaveFormat;
 
@@ -129,7 +133,7 @@ typedef struct GAMESOUND
 
 } GAMESOUND;
 
-typedef struct PIXEL32 
+typedef struct PIXEL32
 {
 	uint8_t Blue;
 
@@ -141,13 +145,13 @@ typedef struct PIXEL32
 
 } PIXEL32;
 
-typedef struct GAMEPERFDATA 
+typedef struct GAMEPERFDATA
 {
 	uint64_t TotalFramesRendered;
 
-	float RawFPSAverage;
+	FLOAT RawFPSAverage;
 
-	float CookedFPSAverage;
+	FLOAT CookedFPSAverage;
 
 	int64_t PerfFrequency;
 
@@ -175,15 +179,17 @@ typedef struct GAMEPERFDATA
 
 	int64_t PreviousSystemTime;
 
-	double CPUPercent;
+	DOUBLE CPUPercent;
 
 } GAMEPERFDATA;
 
-typedef struct HERO 
+typedef struct HERO
 {
-	char Name[12];
+	CHAR Name[12];
 
 	GAMEBITMAP Sprite[3][12];
+
+	BOOL Active;
 
 	int16_t ScreenPosX;
 
@@ -249,6 +255,8 @@ __forceinline void ClearScreen(_In_ PIXEL32* Pixel);
 
 #endif
 
+// Draw Screens
+
 void DrawOpeningSplashScreen(void);
 
 void DrawTitleScreen(void);
@@ -261,9 +269,13 @@ void DrawOverworld(void);
 
 void DrawBattle(void);
 
-void DrawOptionScreen(void);
+void DrawOptionsScreen(void);
 
 void DrawExitYesNoScreen(void);
+
+void DrawGamepadUnplugged(void);
+
+// Process Player Inputs
 
 void PPI_OpeningSplashScreen(void);
 
@@ -273,6 +285,8 @@ void PPI_Overworld(void);
 
 void PPI_Battle(void);
 
-void PPI_OptionScreen(void);
+void PPI_OptionsScreen(void);
 
 void PPI_ExitYesNoScreen(void);
+
+void PPI_GamepadUnplugged(void);
